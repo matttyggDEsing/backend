@@ -1,0 +1,37 @@
+2026-05-12 22:54:46 [INFO] [DB] Conexión a MySQL establecida correctamente
+2026-05-12 22:54:46 [INFO] [Redis] Conexión establecida
+2026-05-12 22:54:46 [INFO] [Redis] Ping OK
+2026-05-12 22:54:46 [INFO] [OrderProcessor] Polling iniciado (cada 60s)
+2026-05-12 22:54:46 [INFO] 🚀 NexaPanel backend corriendo en puerto 5000 [development]
+2026-05-12 22:55:25 [INFO] ::1 - - [13/May/2026:01:55:25 +0000] "GET / HTTP/1.1" 404 48 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36"
+2026-05-12 22:55:25 [INFO] ::1 - - [13/May/2026:01:55:25 +0000] "GET /favicon.ico HTTP/1.1" 404 48 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36"
+2026-05-12 23:00:10 [INFO] [DB] Conexión a MySQL establecida correctamente
+2026-05-12 23:00:10 [INFO] [Redis] Conexión establecida
+2026-05-12 23:00:10 [INFO] [Redis] Ping OK
+2026-05-12 23:00:10 [INFO] [OrderProcessor] Polling iniciado (cada 60s)
+2026-05-12 23:00:10 [INFO] 🚀 NexaPanel backend corriendo en puerto 5000 [development]
+2026-05-12 23:00:27 [INFO] [DB] Conexión a MySQL establecida correctamente
+2026-05-12 23:00:27 [INFO] [Redis] Conexión establecida
+2026-05-12 23:00:27 [INFO] [Redis] Ping OK
+2026-05-12 23:00:27 [INFO] [OrderProcessor] Polling iniciado (cada 60s)
+2026-05-12 23:00:27 [INFO] 🚀 NexaPanel backend corriendo en puerto 5000 [development]
+2026-05-12 23:19:47 [INFO] [DB] Conexión a MySQL establecida correctamente
+2026-05-12 23:19:47 [INFO] [Redis] Conexión establecida
+2026-05-12 23:19:47 [INFO] [Redis] Ping OK
+2026-05-12 23:19:47 [INFO] [OrderProcessor] Polling iniciado (cada 60s)
+2026-05-12 23:19:47 [INFO] 🚀 NexaPanel backend corriendo en puerto 5000 [development]
+2026-05-12 23:22:51 [INFO] [DB] Conexión a MySQL establecida correctamente
+2026-05-12 23:22:51 [INFO] [Redis] Conexión establecida
+2026-05-12 23:22:51 [INFO] [Redis] Ping OK
+2026-05-12 23:22:51 [INFO] [OrderProcessor] Polling iniciado (cada 60s)
+2026-05-12 23:22:51 [INFO] 🚀 NexaPanel backend corriendo en puerto 5000 [development]
+2026-05-12 23:24:59 [INFO] [DB] Conexión a MySQL establecida correctamente
+2026-05-12 23:24:59 [INFO] [Redis] Conexión establecida
+2026-05-12 23:24:59 [INFO] [Redis] Ping OK
+2026-05-12 23:24:59 [INFO] [OrderProcessor] Polling iniciado (cada 60s)
+2026-05-12 23:24:59 [INFO] 🚀 NexaPanel backend corriendo en puerto 5000 [development]
+2026-05-12 23:25:41 [INFO] ::1 - - [13/May/2026:02:25:41 +0000] "POST /api/auth/register HTTP/1.1" 201 390 "http://localhost:3000/register" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36"
+2026-05-12 23:25:43 [ERROR] [Mailer] Error enviando email: Invalid login: 535-5.7.8 Username and Password not accepted. For more information, go to
+535 5.7.8  https://support.google.com/mail/?p=BadCredentials a1e0cc1a2514c-95f21a10d2dsm8292688241.5 - gsmtp
+2026-05-12 23:25:47 [INFO] ::1 - - [13/May/2026:02:25:47 +0000] "POST /api/auth/login HTTP/1.1" 200 361 "http://localhost:3000/login" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36"
+2026-05-12 23:25:52 [INFO] ::1 - - [13/May/2026:02:25:52 +0000] "POST /api/auth/login HTTP/1.1" 200 361 "http://localhost:3000/login" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36"
