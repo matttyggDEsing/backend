@@ -7,24 +7,23 @@ const logger = require('../utils/logger');
 
 /**
  * GET /api/services
- * Lista los servicios activos con rate de venta (markup incluido).
+ * Lista los servicios activos. Expone el rate tal cual (precio de venta).
  */
 const listServices = async (req, res, next) => {
   try {
     const { category } = req.query;
     const services = await serviceModel.findAll({ category });
 
-    // Exponer rate_markup (precio de venta) en lugar del costo interno
     const output = services.map((s) => ({
       id: s.id,
       name: s.name,
       category: s.category,
       type: s.type,
-      rate: s.rate_markup,          // precio por 1000 en USD al usuario
-      min: s.min_qty,
-      max: s.max_qty,
+      rate: parseFloat(s.rate),
+      min: s.min_order,
+      max: s.max_order,
       refill: !!s.refill,
-      cancel: !!s.cancel_enabled,
+      cancel: !!s.cancel,
       description: s.description,
     }));
 
@@ -36,7 +35,6 @@ const listServices = async (req, res, next) => {
 
 /**
  * GET /api/services/categories
- * Devuelve categorías únicas de servicios activos.
  */
 const listCategories = async (req, res, next) => {
   try {
@@ -49,7 +47,6 @@ const listCategories = async (req, res, next) => {
 
 /**
  * GET /api/services/:id
- * Detalle de un servicio.
  */
 const getService = async (req, res, next) => {
   try {
@@ -61,11 +58,11 @@ const getService = async (req, res, next) => {
       name: service.name,
       category: service.category,
       type: service.type,
-      rate: service.rate_markup,
-      min: service.min_qty,
-      max: service.max_qty,
+      rate: parseFloat(service.rate),
+      min: service.min_order,
+      max: service.max_order,
       refill: !!service.refill,
-      cancel: !!service.cancel_enabled,
+      cancel: !!service.cancel,
       description: service.description,
     });
   } catch (err) {
@@ -75,7 +72,7 @@ const getService = async (req, res, next) => {
 
 /**
  * POST /api/admin/services/sync
- * [Admin] Sincroniza servicios desde el proveedor Peakerr.
+ * Sincroniza servicios desde Peakerr.
  */
 const syncServices = async (req, res, next) => {
   try {

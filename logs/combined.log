@@ -228,3 +228,50 @@
 2026-05-13 23:29:55 [INFO] ::1 - - [14/May/2026:02:29:55 +0000] "POST /api/tickets HTTP/1.1" 422 124 "http://localhost:3000/dashboard/tickets" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36"
 2026-05-13 23:29:55 [INFO] ::1 - - [14/May/2026:02:29:55 +0000] "POST /api/tickets HTTP/1.1" 422 124 "http://localhost:3000/dashboard/tickets" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36"
 2026-05-13 23:29:56 [INFO] ::1 - - [14/May/2026:02:29:56 +0000] "POST /api/tickets HTTP/1.1" 422 124 "http://localhost:3000/dashboard/tickets" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36"
+2026-05-13 23:44:23 [INFO] [DB] Conexión a MySQL establecida correctamente
+2026-05-13 23:44:23 [INFO] [Redis] Conexión establecida
+2026-05-13 23:44:23 [INFO] [Redis] Ping OK
+2026-05-13 23:44:23 [INFO] [OrderProcessor] Polling iniciado (cada 60s)
+2026-05-13 23:44:23 [INFO] 🚀 NexaPanel backend corriendo en puerto 5000 [development]
+2026-05-13 23:44:34 [INFO] [DB] Conexión a MySQL establecida correctamente
+2026-05-13 23:44:34 [INFO] [Redis] Conexión establecida
+2026-05-13 23:44:34 [INFO] [Redis] Ping OK
+2026-05-13 23:44:34 [INFO] [OrderProcessor] Polling iniciado (cada 60s)
+2026-05-13 23:44:34 [INFO] 🚀 NexaPanel backend corriendo en puerto 5000 [development]
+2026-05-13 23:44:39 [INFO] [DB] Conexión a MySQL establecida correctamente
+2026-05-13 23:44:39 [INFO] [Redis] Conexión establecida
+2026-05-13 23:44:39 [INFO] [Redis] Ping OK
+2026-05-13 23:44:39 [INFO] [OrderProcessor] Polling iniciado (cada 60s)
+2026-05-13 23:44:39 [INFO] 🚀 NexaPanel backend corriendo en puerto 5000 [development]
+2026-05-13 23:44:52 [INFO] ::1 - - [14/May/2026:02:44:52 +0000] "GET /api/tickets HTTP/1.1" 200 88 "http://localhost:3000/dashboard/tickets" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36"
+2026-05-13 23:44:52 [INFO] ::1 - - [14/May/2026:02:44:52 +0000] "GET /api/tickets HTTP/1.1" 304 - "http://localhost:3000/dashboard/tickets" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36"
+2026-05-13 23:44:56 [INFO] ::1 - - [14/May/2026:02:44:56 +0000] "POST /api/tickets HTTP/1.1" 422 180 "http://localhost:3000/dashboard/tickets" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36"
+2026-05-13 23:45:00 [INFO] ::1 - - [14/May/2026:02:45:00 +0000] "GET /api/tickets HTTP/1.1" 304 - "http://localhost:3000/dashboard/tickets" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36"
+2026-05-13 23:45:00 [INFO] ::1 - - [14/May/2026:02:45:00 +0000] "GET /api/tickets HTTP/1.1" 304 - "http://localhost:3000/dashboard/tickets" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36"
+2026-05-13 23:45:00 [INFO] ::1 - - [14/May/2026:02:45:00 +0000] "GET /api/tickets HTTP/1.1" 304 - "http://localhost:3000/dashboard/tickets" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36"
+2026-05-13 23:45:01 [INFO] ::1 - - [14/May/2026:02:45:01 +0000] "GET /api/tickets HTTP/1.1" 304 - "http://localhost:3000/dashboard/tickets" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36"
+2026-05-13 23:45:01 [INFO] ::1 - - [14/May/2026:02:45:01 +0000] "GET /api/tickets HTTP/1.1" 304 - "http://localhost:3000/dashboard/tickets" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36"
+2026-05-13 23:45:01 [INFO] ::1 - - [14/May/2026:02:45:01 +0000] "GET /api/tickets HTTP/1.1" 304 - "http://localhost:3000/dashboard/tickets" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36"
+2026-05-13 23:45:01 [INFO] ::1 - - [14/May/2026:02:45:01 +0000] "GET /api/tickets HTTP/1.1" 304 - "http://localhost:3000/dashboard/tickets" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36"
+2026-05-13 23:45:19 [INFO] ::1 - - [14/May/2026:02:45:19 +0000] "GET /api/services?perPage=500 HTTP/1.1" 304 - "http://localhost:3000/dashboard/services" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36"
+2026-05-13 23:45:19 [INFO] ::1 - - [14/May/2026:02:45:19 +0000] "GET /api/services/categories HTTP/1.1" 404 52 "http://localhost:3000/dashboard/services" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36"
+2026-05-13 23:45:19 [INFO] ::1 - - [14/May/2026:02:45:19 +0000] "GET /api/services?perPage=500 HTTP/1.1" 304 - "http://localhost:3000/dashboard/services" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36"
+2026-05-13 23:45:19 [INFO] ::1 - - [14/May/2026:02:45:19 +0000] "GET /api/services/categories HTTP/1.1" 404 52 "http://localhost:3000/dashboard/services" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36"
+2026-05-13 23:45:22 [INFO] ::1 - - [14/May/2026:02:45:22 +0000] "GET /api/services/categories HTTP/1.1" 404 52 "http://localhost:3000/dashboard/new-order" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36"
+2026-05-13 23:45:22 [INFO] ::1 - - [14/May/2026:02:45:22 +0000] "GET /api/services?perPage=500 HTTP/1.1" 304 - "http://localhost:3000/dashboard/new-order" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36"
+2026-05-13 23:45:22 [INFO] ::1 - - [14/May/2026:02:45:22 +0000] "GET /api/services/categories HTTP/1.1" 404 52 "http://localhost:3000/dashboard/new-order" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36"
+2026-05-13 23:45:22 [INFO] ::1 - - [14/May/2026:02:45:22 +0000] "GET /api/services?perPage=500 HTTP/1.1" 304 - "http://localhost:3000/dashboard/new-order" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36"
+2026-05-13 23:45:39 [INFO] ::1 - - [14/May/2026:02:45:39 +0000] "GET /api/api-key HTTP/1.1" 404 48 "http://localhost:3000/dashboard/api" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36"
+2026-05-13 23:45:39 [INFO] ::1 - - [14/May/2026:02:45:39 +0000] "GET /api/api-key/stats HTTP/1.1" 404 48 "http://localhost:3000/dashboard/api" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36"
+2026-05-13 23:45:39 [INFO] ::1 - - [14/May/2026:02:45:39 +0000] "GET /api/api-key/logs?perPage=8 HTTP/1.1" 404 48 "http://localhost:3000/dashboard/api" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36"
+2026-05-13 23:45:39 [INFO] ::1 - - [14/May/2026:02:45:39 +0000] "GET /api/api-key HTTP/1.1" 404 48 "http://localhost:3000/dashboard/api" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36"
+2026-05-13 23:45:39 [INFO] ::1 - - [14/May/2026:02:45:39 +0000] "GET /api/api-key/stats HTTP/1.1" 404 48 "http://localhost:3000/dashboard/api" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36"
+2026-05-13 23:45:39 [INFO] ::1 - - [14/May/2026:02:45:39 +0000] "GET /api/api-key/logs?perPage=8 HTTP/1.1" 404 48 "http://localhost:3000/dashboard/api" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36"
+2026-05-13 23:47:36 [INFO] ::1 - - [14/May/2026:02:47:36 +0000] "GET /api/orders/stats HTTP/1.1" 304 - "http://localhost:3000/dashboard" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36"
+2026-05-13 23:47:36 [INFO] ::1 - - [14/May/2026:02:47:36 +0000] "GET /api/orders/chart?range=7d HTTP/1.1" 404 49 "http://localhost:3000/dashboard" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36"
+2026-05-13 23:47:36 [INFO] ::1 - - [14/May/2026:02:47:36 +0000] "GET /api/orders?perPage=5&page=1 HTTP/1.1" 304 - "http://localhost:3000/dashboard" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36"
+2026-05-13 23:47:36 [INFO] ::1 - - [14/May/2026:02:47:36 +0000] "GET /api/orders/stats HTTP/1.1" 304 - "http://localhost:3000/dashboard" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36"
+2026-05-13 23:47:36 [INFO] ::1 - - [14/May/2026:02:47:36 +0000] "GET /api/orders/chart?range=7d HTTP/1.1" 404 49 "http://localhost:3000/dashboard" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36"
+2026-05-13 23:47:36 [INFO] ::1 - - [14/May/2026:02:47:36 +0000] "GET /api/orders?perPage=5&page=1 HTTP/1.1" 304 - "http://localhost:3000/dashboard" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36"
+2026-05-13 23:47:36 [INFO] ::1 - - [14/May/2026:02:47:36 +0000] "GET /api/wallet/balance HTTP/1.1" 304 - "http://localhost:3000/dashboard" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36"
+2026-05-13 23:47:36 [INFO] ::1 - - [14/May/2026:02:47:36 +0000] "GET /api/wallet/balance HTTP/1.1" 304 - "http://localhost:3000/dashboard" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36"
