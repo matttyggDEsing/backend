@@ -3,11 +3,8 @@
 const { pool } = require('../config/db');
 
 /**
- * Retorna servicios activos.
- * Usado por servicesController (getActive) y serviceController (findAll).
- * Tu tabla real: id, provider_id, category_id, provider_service_id,
- *                name, description, rate, min_order, max_order,
- *                type, refill, cancel, is_active, sort_order
+ * Retorna servicios activos (con join a categories).
+ * Usado por servicesController y apiController.
  */
 const getActive = async ({ categoryId } = {}) => {
   let sql = `
@@ -28,7 +25,7 @@ const getActive = async ({ categoryId } = {}) => {
   return rows;
 };
 
-// Alias para compatibilidad con serviceController que llama findAll({ category })
+// Alias para serviceController que llama findAll({ category })
 const findAll = async ({ category } = {}) => {
   let sql = `
     SELECT s.id, s.provider_service_id, s.name, s.description,
@@ -77,23 +74,115 @@ const getCategories = async () => {
 };
 
 /**
+ * Lista todos los servicios con paginación y búsqueda (uso admin).
+ * FIX: Esta función faltaba en el export original → adminController fallaba.
+ */
+const getAll = async ({ limit = 20, offset = 0, search = null, categoryId = null } = {}) => {
+  const conditions = [];
+  const params = [];
+
+  if (search) {
+    conditions.push('(s.name LIKE ? OR s.provider_service_id = ?)');
+    params.push(`%${search}%`, parseInt(search) || 0);
+  }
+  if (categoryId) {
+    conditions.push('s.category_id = ?');
+    params.push(categoryId);
+  }
+
+  const where = conditions.length ? 'WHERE ' + conditions.join(' AND ') : '';
+
+  const [rows] = await pool.query(
+    `SELECT s.id, s.provider_service_id, s.name, s.description,
+            s.rate, s.min_order, s.max_order, s.type,
+            s.refill, s.cancel, s.is_active, s.sort_order,
+            s.created_at, s.updated_at,
+            c.name AS category_name, c.id AS category_id,
+            p.name AS provider_name
+     FROM services s
+     JOIN categories c ON c.id = s.category_id
+     JOIN providers p  ON p.id = s.provider_id
+     ${where}
+     ORDER BY s.id DESC
+     LIMIT ? OFFSET ?`,
+    [...params, parseInt(limit), parseInt(offset)],
+  );
+
+  const [[{ total }]] = await pool.query(
+    `SELECT COUNT(*) AS total FROM services s ${where}`,
+    params,
+  );
+
+  return { rows, total };
+};
+
+/**
+ * Crea un servicio manualmente (uso admin).
+ * FIX: Esta función faltaba en el export original → importServices fallaba silenciosamente.
+ */
+const create = async ({
+  provider_id, category_id, provider_service_id = 0,
+  name, description = '', rate, min_order, max_order,
+  type = 'Default', refill = false, cancel = false,
+}) => {
+  const [result] = await pool.query(
+    `INSERT INTO services
+       (provider_id, category_id, provider_service_id, name, description,
+        rate, min_order, max_order, type, refill, cancel, is_active)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`,
+    [
+      provider_id, category_id, provider_service_id,
+      name, description, parseFloat(rate),
+      parseInt(min_order), parseInt(max_order),
+      type, refill ? 1 : 0, cancel ? 1 : 0,
+    ],
+  );
+  return result.insertId;
+};
+
+/**
+ * Actualiza campos de un servicio (uso admin).
+ * FIX: Esta función faltaba en el export original → adminController.updateService fallaba.
+ */
+const update = async (id, data) => {
+  const allowed = [
+    'name', 'description', 'rate', 'min_order', 'max_order',
+    'type', 'is_active', 'category_id', 'refill', 'cancel', 'sort_order',
+  ];
+  const fields = [];
+  const values = [];
+
+  for (const key of allowed) {
+    if (data[key] !== undefined) {
+      fields.push(`${key} = ?`);
+      values.push(data[key]);
+    }
+  }
+
+  if (!fields.length) return;
+
+  values.push(id);
+  await pool.query(
+    `UPDATE services SET ${fields.join(', ')}, updated_at = NOW() WHERE id = ?`,
+    values,
+  );
+};
+
+/**
  * Sincroniza servicios desde Peakerr.
- * Busca el provider_id del proveedor activo y usa category_id = 1 como fallback
- * (el admin puede reasignar categorías después desde el panel).
+ * Hace upsert por provider_service_id + provider_id.
  */
 const syncFromProvider = async (services) => {
   const conn = await pool.getConnection();
   try {
     await conn.beginTransaction();
 
-    // Obtener el primer provider activo
     const [[provider]] = await conn.query(
       `SELECT id FROM providers WHERE status = 'active' ORDER BY id LIMIT 1`,
     );
     if (!provider) throw new Error('No hay ningún proveedor activo configurado');
     const providerId = provider.id;
 
-    // Obtener o crear categoría "Sin categoría" como fallback
     let [[fallbackCat]] = await conn.query(
       `SELECT id FROM categories WHERE slug = 'sin-categoria' LIMIT 1`,
     );
@@ -106,15 +195,13 @@ const syncFromProvider = async (services) => {
 
     let synced = 0;
     for (const s of services) {
-      // Intentar hacer match de categoría por nombre
       let [[cat]] = await conn.query(
         `SELECT id FROM categories WHERE name = ? LIMIT 1`,
         [s.category],
       );
       if (!cat) {
-        // Crear categoría nueva automáticamente
         const slug = s.category.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-        const [ins] = await conn.query(
+        await conn.query(
           `INSERT IGNORE INTO categories (name, slug, is_active) VALUES (?, ?, 1)`,
           [s.category, slug],
         );
@@ -171,4 +258,13 @@ const syncFromProvider = async (services) => {
   }
 };
 
-module.exports = { getActive, findAll, findById, getCategories, syncFromProvider };
+module.exports = {
+  getActive,
+  findAll,
+  findById,
+  getCategories,
+  getAll,    // ← FIX: ahora exportado
+  create,    // ← FIX: ahora exportado
+  update,    // ← FIX: ahora exportado
+  syncFromProvider,
+};

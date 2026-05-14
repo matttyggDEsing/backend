@@ -275,3 +275,43 @@
 2026-05-13 23:47:36 [INFO] ::1 - - [14/May/2026:02:47:36 +0000] "GET /api/orders?perPage=5&page=1 HTTP/1.1" 304 - "http://localhost:3000/dashboard" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36"
 2026-05-13 23:47:36 [INFO] ::1 - - [14/May/2026:02:47:36 +0000] "GET /api/wallet/balance HTTP/1.1" 304 - "http://localhost:3000/dashboard" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36"
 2026-05-13 23:47:36 [INFO] ::1 - - [14/May/2026:02:47:36 +0000] "GET /api/wallet/balance HTTP/1.1" 304 - "http://localhost:3000/dashboard" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36"
+2026-05-14 00:20:08 [INFO] [DB] Conexión a MySQL establecida correctamente
+2026-05-14 00:20:08 [INFO] [Redis] Conexión establecida
+2026-05-14 00:20:08 [INFO] [Redis] Ping OK
+2026-05-14 00:20:08 [INFO] [OrderProcessor] Polling iniciado (cada 60s)
+2026-05-14 00:20:08 [INFO] 🚀 NexaPanel backend corriendo en puerto 5000 [development]
+2026-05-14 14:23:21 [INFO] [DB] Conexión a MySQL establecida correctamente
+2026-05-14 14:23:21 [INFO] [Redis] Conexión establecida
+2026-05-14 14:23:21 [INFO] [Redis] Ping OK
+2026-05-14 14:23:21 [INFO] [OrderProcessor] Polling iniciado (cada 60s)
+2026-05-14 14:23:21 [INFO] 🚀 NexaPanel backend corriendo en puerto 5000 [development]
+2026-05-14 14:23:32 [INFO] ::1 - - [14/May/2026:17:23:32 +0000] "POST /api/auth/login HTTP/1.1" 401 53 "http://localhost:3000/login" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36"
+2026-05-14 14:23:34 [INFO] ::1 - - [14/May/2026:17:23:34 +0000] "POST /api/auth/login HTTP/1.1" 401 53 "http://localhost:3000/login" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36"
+2026-05-14 14:23:40 [INFO] ::1 - - [14/May/2026:17:23:40 +0000] "POST /api/auth/login HTTP/1.1" 401 53 "http://localhost:3000/login" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36"
+2026-05-14 14:23:53 [INFO] ::1 - - [14/May/2026:17:23:53 +0000] "POST /api/auth/register HTTP/1.1" 201 384 "http://localhost:3000/register" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36"
+2026-05-14 14:23:53 [INFO] ::1 - - [14/May/2026:17:23:53 +0000] "GET /api/orders/stats HTTP/1.1" 200 117 "http://localhost:3000/dashboard" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36"
+2026-05-14 14:23:53 [INFO] ::1 - - [14/May/2026:17:23:53 +0000] "GET /api/orders/chart?range=7d HTTP/1.1" 404 49 "http://localhost:3000/dashboard" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36"
+2026-05-14 14:23:53 [INFO] ::1 - - [14/May/2026:17:23:53 +0000] "GET /api/wallet/balance HTTP/1.1" 200 54 "http://localhost:3000/dashboard" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36"
+2026-05-14 14:23:53 [INFO] ::1 - - [14/May/2026:17:23:53 +0000] "GET /api/orders/stats HTTP/1.1" 304 - "http://localhost:3000/dashboard" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36"
+2026-05-14 14:23:53 [INFO] ::1 - - [14/May/2026:17:23:53 +0000] "GET /api/orders?perPage=5&page=1 HTTP/1.1" 200 87 "http://localhost:3000/dashboard" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36"
+2026-05-14 14:23:53 [INFO] ::1 - - [14/May/2026:17:23:53 +0000] "GET /api/orders/chart?range=7d HTTP/1.1" 404 49 "http://localhost:3000/dashboard" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36"
+2026-05-14 14:23:53 [INFO] ::1 - - [14/May/2026:17:23:53 +0000] "GET /api/wallet/balance HTTP/1.1" 304 - "http://localhost:3000/dashboard" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36"
+2026-05-14 14:23:53 [INFO] ::1 - - [14/May/2026:17:23:53 +0000] "GET /api/orders?perPage=5&page=1 HTTP/1.1" 304 - "http://localhost:3000/dashboard" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36"
+2026-05-14 14:23:54 [ERROR] [Mailer] Error enviando email: Invalid login: 535-5.7.8 Username and Password not accepted. For more information, go to
+535 5.7.8  https://support.google.com/mail/?p=BadCredentials a1e0cc1a2514c-95fad742808sm1765665241.8 - gsmtp
+2026-05-14 14:23:56 [INFO] ::1 - - [14/May/2026:17:23:56 +0000] "GET /api/tickets HTTP/1.1" 304 - "http://localhost:3000/dashboard/tickets" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36"
+2026-05-14 14:23:56 [INFO] ::1 - - [14/May/2026:17:23:56 +0000] "GET /api/tickets HTTP/1.1" 304 - "http://localhost:3000/dashboard/tickets" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36"
+2026-05-14 14:24:15 [INFO] ::1 - - [14/May/2026:17:24:15 +0000] "POST /api/auth/login HTTP/1.1" 200 355 "http://localhost:3000/login" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36"
+2026-05-14 14:24:15 [INFO] ::1 - - [14/May/2026:17:24:15 +0000] "GET /api/orders/stats HTTP/1.1" 304 - "http://localhost:3000/dashboard" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36"
+2026-05-14 14:24:15 [INFO] ::1 - - [14/May/2026:17:24:15 +0000] "GET /api/orders/chart?range=7d HTTP/1.1" 404 49 "http://localhost:3000/dashboard" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36"
+2026-05-14 14:24:15 [INFO] ::1 - - [14/May/2026:17:24:15 +0000] "GET /api/wallet/balance HTTP/1.1" 304 - "http://localhost:3000/dashboard" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36"
+2026-05-14 14:24:15 [INFO] ::1 - - [14/May/2026:17:24:15 +0000] "GET /api/orders?perPage=5&page=1 HTTP/1.1" 304 - "http://localhost:3000/dashboard" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36"
+2026-05-14 14:24:15 [INFO] ::1 - - [14/May/2026:17:24:15 +0000] "GET /api/orders/stats HTTP/1.1" 304 - "http://localhost:3000/dashboard" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36"
+2026-05-14 14:24:15 [INFO] ::1 - - [14/May/2026:17:24:15 +0000] "GET /api/orders/chart?range=7d HTTP/1.1" 404 49 "http://localhost:3000/dashboard" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36"
+2026-05-14 14:24:15 [INFO] ::1 - - [14/May/2026:17:24:15 +0000] "GET /api/wallet/balance HTTP/1.1" 304 - "http://localhost:3000/dashboard" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36"
+2026-05-14 14:24:15 [INFO] ::1 - - [14/May/2026:17:24:15 +0000] "GET /api/orders?perPage=5&page=1 HTTP/1.1" 304 - "http://localhost:3000/dashboard" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36"
+2026-05-14 14:28:43 [INFO] [DB] Conexión a MySQL establecida correctamente
+2026-05-14 14:28:43 [INFO] [Redis] Conexión establecida
+2026-05-14 14:28:43 [INFO] [Redis] Ping OK
+2026-05-14 14:28:43 [INFO] [OrderProcessor] Polling iniciado (cada 60s)
+2026-05-14 14:28:43 [INFO] 🚀 NexaPanel backend corriendo en puerto 5000 [development]

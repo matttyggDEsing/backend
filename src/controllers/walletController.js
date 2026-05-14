@@ -1,32 +1,80 @@
 'use strict';
 
-const walletModel = require('../models/walletModel');
-const { successResponse, errorResponse, paginatedResponse } = require('../utils/response');
-const { paginate } = require('../utils/pagination');
-const { pool } = require('../config/db');
-
 /**
- * GET /api/wallet
- * Retorna el balance actual del usuario autenticado.
+ * walletController.js — VERSIÓN CORREGIDA
+ *
+ * BUG ORIGINAL: Este controller usaba walletModel que leía de la tabla `wallets`,
+ * completamente desconectada de `users.balance` que es la que usan ordersController
+ * y authController. Las órdenes debitaban users.balance pero el wallet mostraba
+ * wallets.balance (siempre desincronizado → créditos fantasma).
+ *
+ * FIX: Todo lee/escribe directamente de users.balance + transactions.
+ * Se eliminó la dependencia de walletModel para las operaciones de saldo.
  */
+
+const { pool }              = require('../config/db');
+const transactionModel      = require('../models/transactionModel');
+const { successResponse, errorResponse, paginatedResponse } = require('../utils/response');
+const { paginate }          = require('../utils/pagination');
+const logger                = require('../utils/logger');
+
+/* ─────────────────────────────────────────────────────────────
+   GET /api/wallet  →  retorna el saldo real del usuario
+──────────────────────────────────────────────────────────────── */
 const getWallet = async (req, res, next) => {
   try {
-    await walletModel.ensureWallet(req.user.id);
-    const balance = await walletModel.getBalance(req.user.id);
-    return successResponse(res, { balance, currency: 'USD' });
+    const [[user]] = await pool.query(
+      'SELECT balance FROM users WHERE id = ? LIMIT 1',
+      [req.user.id],
+    );
+
+    if (!user) return errorResponse(res, 'Usuario no encontrado', 404);
+
+    return successResponse(res, {
+      balance:  parseFloat(user.balance),
+      currency: 'USD',
+    });
   } catch (err) {
     next(err);
   }
 };
 
-/**
- * GET /api/wallet/transactions
- * Historial de movimientos con paginación.
- */
+/* ─────────────────────────────────────────────────────────────
+   GET /api/wallet/transactions  →  historial de movimientos
+──────────────────────────────────────────────────────────────── */
 const getTransactions = async (req, res, next) => {
   try {
     const { limit, offset, pagination } = paginate(req.query, 0);
-    const { rows, total } = await walletModel.getTransactions(req.user.id, { limit, offset });
+    const { type } = req.query; // 'credit' | 'debit' | undefined
+
+    // Construir query sobre tabla `transactions` (que sí se sincroniza con órdenes)
+    const conditions = ['t.user_id = ?'];
+    const params = [req.user.id];
+
+    if (type === 'credit' || type === 'debit') {
+      conditions.push('t.type = ?');
+      params.push(type);
+    }
+
+    const where = conditions.join(' AND ');
+
+    const [rows] = await pool.query(
+      `SELECT t.id, t.type, t.amount, t.balance_before, t.balance_after,
+              t.description, t.method, t.reference, t.status, t.created_at,
+              o.link AS order_link
+       FROM transactions t
+       LEFT JOIN orders o ON o.id = t.order_id
+       WHERE ${where}
+       ORDER BY t.created_at DESC
+       LIMIT ? OFFSET ?`,
+      [...params, limit, offset],
+    );
+
+    const [[{ total }]] = await pool.query(
+      `SELECT COUNT(*) AS total FROM transactions t WHERE ${where}`,
+      params,
+    );
+
     return paginatedResponse(res, rows, {
       ...pagination,
       total,
@@ -37,40 +85,34 @@ const getTransactions = async (req, res, next) => {
   }
 };
 
-/**
- * POST /api/wallet/deposit
- * Crea una solicitud de depósito.
- * Body: { amount, method }
- *   method: 'crypto' | 'paypal' | 'stripe' | 'manual'
- */
+/* ─────────────────────────────────────────────────────────────
+   POST /api/wallet/deposit  →  solicitar depósito (queda pending)
+──────────────────────────────────────────────────────────────── */
 const requestDeposit = async (req, res, next) => {
   try {
     const { amount, method = 'manual' } = req.body;
 
-    if (!amount || isNaN(amount) || parseFloat(amount) <= 0) {
-      return errorResponse(res, 'Monto inválido', 400);
-    }
-
-    const parsedAmount = parseFloat(parseFloat(amount).toFixed(2));
-    if (parsedAmount < 1) {
+    if (!amount || isNaN(amount) || parseFloat(amount) < 1) {
       return errorResponse(res, 'El monto mínimo de depósito es $1.00', 400);
     }
 
-    const ALLOWED_METHODS = ['crypto', 'paypal', 'stripe', 'manual'];
-    if (!ALLOWED_METHODS.includes(method)) {
-      return errorResponse(res, 'Método de pago no válido', 400);
+    const VALID_METHODS = ['crypto', 'paypal', 'stripe', 'manual'];
+    if (!VALID_METHODS.includes(method)) {
+      return errorResponse(res, `Método inválido. Usa: ${VALID_METHODS.join(', ')}`, 400);
     }
 
-    const depositId = await walletModel.createDepositRequest(req.user.id, {
-      amount: parsedAmount,
-      method,
-      externalRef: null,
-    });
+    const [result] = await pool.query(
+      `INSERT INTO deposit_requests (user_id, amount, method, status)
+       VALUES (?, ?, ?, 'pending')`,
+      [req.user.id, parseFloat(amount), method],
+    );
+
+    logger.info(`Deposit request #${result.insertId} by user ${req.user.id} for $${amount}`);
 
     return successResponse(
       res,
-      { deposit_id: depositId, amount: parsedAmount, method, status: 'pending' },
-      'Solicitud de depósito creada. Espera la confirmación.',
+      { id: result.insertId, amount: parseFloat(amount), method, status: 'pending' },
+      'Solicitud de depósito creada. Un administrador la procesará en breve.',
       201,
     );
   } catch (err) {
@@ -78,52 +120,4 @@ const requestDeposit = async (req, res, next) => {
   }
 };
 
-/**
- * POST /api/admin/wallet/confirm-deposit
- * [Admin] Confirma un depósito manual y acredita el balance.
- * Body: { deposit_id }
- */
-const confirmDeposit = async (req, res, next) => {
-  try {
-    const { deposit_id } = req.body;
-    if (!deposit_id) return errorResponse(res, 'deposit_id requerido', 400);
-
-    const result = await walletModel.confirmDeposit(deposit_id);
-    return successResponse(res, result, 'Depósito confirmado y balance acreditado');
-  } catch (err) {
-    if (err.message.includes('no encontrado') || err.message.includes('ya procesado')) {
-      return errorResponse(res, err.message, 404);
-    }
-    next(err);
-  }
-};
-
-/**
- * GET /api/admin/wallet/deposits
- * [Admin] Lista solicitudes de depósito con filtro de estado.
- */
-const listDeposits = async (req, res, next) => {
-  try {
-    const { status, limit = 50, offset = 0 } = req.query;
-    let sql = `
-      SELECT dr.id, dr.user_id, u.email, dr.amount, dr.method,
-             dr.external_ref, dr.status, dr.created_at
-      FROM deposit_requests dr
-      JOIN users u ON u.id = dr.user_id
-    `;
-    const params = [];
-    if (status) {
-      sql += ' WHERE dr.status = ?';
-      params.push(status);
-    }
-    sql += ' ORDER BY dr.created_at DESC LIMIT ? OFFSET ?';
-    params.push(parseInt(limit), parseInt(offset));
-
-    const [rows] = await pool.query(sql, params);
-    return successResponse(res, rows);
-  } catch (err) {
-    next(err);
-  }
-};
-
-module.exports = { getWallet, getTransactions, requestDeposit, confirmDeposit, listDeposits };
+module.exports = { getWallet, getTransactions, requestDeposit };

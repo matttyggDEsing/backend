@@ -8,3 +8,5 @@
     at Object.findByUser (C:\Users\Maty\Desktop\nexapanel\backend\src\models\ticketModel.js:45:29)
     at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
     at async getTickets (C:\Users\Maty\Desktop\nexapanel\backend\src\controllers\ticketsController.js:8:29)
+2026-05-14 14:23:54 [ERROR] [Mailer] Error enviando email: Invalid login: 535-5.7.8 Username and Password not accepted. For more information, go to
+535 5.7.8  https://support.google.com/mail/?p=BadCredentials a1e0cc1a2514c-95fad742808sm1765665241.8 - gsmtp
