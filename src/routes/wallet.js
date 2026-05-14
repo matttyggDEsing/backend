@@ -11,9 +11,8 @@ const addFundsSchema = Joi.object({
 });
 
 router.use(auth);
-
-router.get('/balance',       walletController.getBalance);
+router.get('/balance',       walletController.getWallet);
 router.get('/transactions',  walletController.getTransactions);
-router.post('/add-funds', validate(addFundsSchema), walletController.addFunds);
+router.post('/add-funds', validate(addFundsSchema), walletController.requestDeposit);
 
 module.exports = router;

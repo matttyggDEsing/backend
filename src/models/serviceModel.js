@@ -1,94 +1,104 @@
+'use strict';
+
 const { pool } = require('../config/db');
 
-const getActive = async ({ categoryId } = {}) => {
-  let where = 'WHERE s.is_active = 1';
+/**
+ * Retorna todos los servicios activos (visibles para el usuario).
+ */
+const findAll = async ({ category } = {}) => {
+  let sql = `
+    SELECT
+      id, provider_service_id, name, category, type,
+      rate_usd, rate_markup, min_qty, max_qty,
+      refill, cancel_enabled, description, active
+    FROM services
+    WHERE active = 1
+  `;
   const params = [];
-  if (categoryId) {
-    where += ' AND s.category_id = ?';
-    params.push(categoryId);
+  if (category) {
+    sql += ' AND category = ?';
+    params.push(category);
   }
-  const [rows] = await pool.query(
-    `SELECT s.id, s.name, s.description, s.rate, s.min_order, s.max_order,
-            s.type, s.refill, s.cancel, s.category_id,
-            c.name AS category_name, c.slug AS category_slug, c.emoji
-     FROM services s
-     JOIN categories c ON c.id = s.category_id
-     ${where}
-     ORDER BY c.sort_order ASC, s.sort_order ASC`,
-    params,
-  );
+  sql += ' ORDER BY category, name';
+  const [rows] = await pool.query(sql, params);
   return rows;
 };
 
+/**
+ * Busca un servicio por ID interno.
+ */
 const findById = async (id) => {
   const [rows] = await pool.query(
-    `SELECT s.id, s.name, s.rate, s.min_order, s.max_order, s.is_active,
-            s.provider_id, s.provider_service_id, s.category_id
-     FROM services s WHERE s.id = ? LIMIT 1`,
+    `SELECT * FROM services WHERE id = ? AND active = 1 LIMIT 1`,
     [id],
   );
   return rows[0] || null;
 };
 
-const getAll = async ({ limit, offset, search, categoryId }) => {
-  const conditions = [];
-  const params = [];
-
-  if (search) {
-    conditions.push('s.name LIKE ?');
-    params.push(`%${search}%`);
-  }
-  if (categoryId) {
-    conditions.push('s.category_id = ?');
-    params.push(categoryId);
-  }
-
-  const where = conditions.length ? 'WHERE ' + conditions.join(' AND ') : '';
-
+/**
+ * Obtiene las categorías únicas disponibles.
+ */
+const getCategories = async () => {
   const [rows] = await pool.query(
-    `SELECT s.id, s.name, s.rate, s.min_order, s.max_order, s.type, s.is_active,
-            s.refill, s.cancel, s.category_id, c.name AS category_name
-     FROM services s JOIN categories c ON c.id = s.category_id
-     ${where} ORDER BY s.id DESC LIMIT ? OFFSET ?`,
-    [...params, limit, offset],
+    `SELECT DISTINCT category FROM services WHERE active = 1 ORDER BY category`,
   );
-  const [[{ total }]] = await pool.query(
-    `SELECT COUNT(*) AS total FROM services s ${where}`,
-    params,
-  );
-  return { rows, total };
+  return rows.map((r) => r.category);
 };
 
-const create = async (data) => {
-  const [result] = await pool.query(
-    `INSERT INTO services
-       (provider_id, category_id, provider_service_id, name, description,
-        rate, min_order, max_order, type, refill, cancel)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [
-      data.provider_id, data.category_id, data.provider_service_id,
-      data.name, data.description, data.rate,
-      data.min_order, data.max_order, data.type,
-      data.refill ? 1 : 0, data.cancel ? 1 : 0,
-    ],
-  );
-  return result.insertId;
-};
+/**
+ * Sincroniza servicios del proveedor con la base de datos.
+ * - Inserta nuevos servicios.
+ * - Actualiza rate y disponibilidad de los existentes.
+ */
+const syncFromProvider = async (services) => {
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
 
-const update = async (id, data) => {
-  const fields = [];
-  const values = [];
+    for (const s of services) {
+      const [existing] = await conn.query(
+        `SELECT id FROM services WHERE provider_service_id = ? LIMIT 1`,
+        [s.provider_service_id],
+      );
 
-  const allowed = ['name', 'description', 'rate', 'min_order', 'max_order', 'is_active', 'type', 'category_id'];
-  for (const key of allowed) {
-    if (data[key] !== undefined) {
-      fields.push(`${key} = ?`);
-      values.push(data[key]);
+      if (existing.length > 0) {
+        // Actualizar rate y límites, mantener markup personalizado del admin
+        await conn.query(
+          `UPDATE services SET
+             name = ?, category = ?, type = ?, rate_usd = ?,
+             min_qty = ?, max_qty = ?, refill = ?, cancel_enabled = ?
+           WHERE provider_service_id = ?`,
+          [
+            s.name, s.category, s.type, s.rate,
+            s.min, s.max, s.refill ? 1 : 0, s.cancel ? 1 : 0,
+            s.provider_service_id,
+          ],
+        );
+      } else {
+        // Insertar nuevo servicio con markup por defecto del 20%
+        await conn.query(
+          `INSERT INTO services
+             (provider_service_id, name, category, type, rate_usd, rate_markup,
+              min_qty, max_qty, refill, cancel_enabled, description)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [
+            s.provider_service_id, s.name, s.category, s.type,
+            s.rate, parseFloat((s.rate * 1.2).toFixed(6)),
+            s.min, s.max, s.refill ? 1 : 0, s.cancel ? 1 : 0,
+            s.description,
+          ],
+        );
+      }
     }
+
+    await conn.commit();
+    return { synced: services.length };
+  } catch (err) {
+    await conn.rollback();
+    throw err;
+  } finally {
+    conn.release();
   }
-  if (!fields.length) return;
-  values.push(id);
-  await pool.query(`UPDATE services SET ${fields.join(', ')} WHERE id = ?`, values);
 };
 
-module.exports = { getActive, findById, getAll, create, update };
+module.exports = { findAll, findById, getCategories, syncFromProvider };
