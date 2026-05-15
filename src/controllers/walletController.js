@@ -1,25 +1,12 @@
 'use strict';
 
-/**
- * walletController.js — VERSIÓN CORREGIDA
- *
- * BUG ORIGINAL: Este controller usaba walletModel que leía de la tabla `wallets`,
- * completamente desconectada de `users.balance` que es la que usan ordersController
- * y authController. Las órdenes debitaban users.balance pero el wallet mostraba
- * wallets.balance (siempre desincronizado → créditos fantasma).
- *
- * FIX: Todo lee/escribe directamente de users.balance + transactions.
- * Se eliminó la dependencia de walletModel para las operaciones de saldo.
- */
-
-const { pool }              = require('../config/db');
-const transactionModel      = require('../models/transactionModel');
+const { pool }         = require('../config/db');
 const { successResponse, errorResponse, paginatedResponse } = require('../utils/response');
-const { paginate }          = require('../utils/pagination');
-const logger                = require('../utils/logger');
+const { paginate }     = require('../utils/pagination');
+const logger           = require('../utils/logger');
 
 /* ─────────────────────────────────────────────────────────────
-   GET /api/wallet  →  retorna el saldo real del usuario
+   GET /api/wallet  y  GET /api/wallet/balance  → saldo real
 ──────────────────────────────────────────────────────────────── */
 const getWallet = async (req, res, next) => {
   try {
@@ -27,9 +14,7 @@ const getWallet = async (req, res, next) => {
       'SELECT balance FROM users WHERE id = ? LIMIT 1',
       [req.user.id],
     );
-
     if (!user) return errorResponse(res, 'Usuario no encontrado', 404);
-
     return successResponse(res, {
       balance:  parseFloat(user.balance),
       currency: 'USD',
@@ -39,17 +24,19 @@ const getWallet = async (req, res, next) => {
   }
 };
 
+// Alias explícito para que GET /api/wallet/balance también funcione
+const getBalance = getWallet;
+
 /* ─────────────────────────────────────────────────────────────
-   GET /api/wallet/transactions  →  historial de movimientos
+   GET /api/wallet/transactions  → historial
 ──────────────────────────────────────────────────────────────── */
 const getTransactions = async (req, res, next) => {
   try {
     const { limit, offset, pagination } = paginate(req.query, 0);
-    const { type } = req.query; // 'credit' | 'debit' | undefined
+    const { type } = req.query;
 
-    // Construir query sobre tabla `transactions` (que sí se sincroniza con órdenes)
     const conditions = ['t.user_id = ?'];
-    const params = [req.user.id];
+    const params     = [req.user.id];
 
     if (type === 'credit' || type === 'debit') {
       conditions.push('t.type = ?');
@@ -86,7 +73,7 @@ const getTransactions = async (req, res, next) => {
 };
 
 /* ─────────────────────────────────────────────────────────────
-   POST /api/wallet/deposit  →  solicitar depósito (queda pending)
+   POST /api/wallet/deposit  → solicitar depósito (pending)
 ──────────────────────────────────────────────────────────────── */
 const requestDeposit = async (req, res, next) => {
   try {
@@ -120,4 +107,35 @@ const requestDeposit = async (req, res, next) => {
   }
 };
 
-module.exports = { getWallet, getTransactions, requestDeposit };
+/* ─────────────────────────────────────────────────────────────
+   GET /api/wallet/deposits  → historial de depósitos del usuario
+──────────────────────────────────────────────────────────────── */
+const getDeposits = async (req, res, next) => {
+  try {
+    const { limit, offset, pagination } = paginate(req.query, 0);
+
+    const [rows] = await pool.query(
+      `SELECT id, amount, method, status, created_at, updated_at
+       FROM deposit_requests
+       WHERE user_id = ?
+       ORDER BY created_at DESC
+       LIMIT ? OFFSET ?`,
+      [req.user.id, limit, offset],
+    );
+
+    const [[{ total }]] = await pool.query(
+      'SELECT COUNT(*) AS total FROM deposit_requests WHERE user_id = ?',
+      [req.user.id],
+    );
+
+    return paginatedResponse(res, rows, {
+      ...pagination,
+      total,
+      totalPages: Math.ceil(total / pagination.perPage),
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+module.exports = { getWallet, getBalance, getTransactions, requestDeposit, getDeposits };

@@ -59,6 +59,9 @@ app.use('/api/tickets',   ticketsRoutes);
 app.use('/api/providers', providersRoutes);
 app.use('/api/admin',     adminRoutes);
 app.use('/api/v2',        publicApiRoutes);
+app.use('/api/settings', require('./src/routes/settings'));      // admin settings
+app.use('/api/admin/settings', require('./src/routes/settings')); // alias admin
+app.use('/api/api-key', require('./src/routes/apiKey'));          // api key usuario
 
 // ── 404 ────────────────────────────────────────────────────────────────────
 app.use((req, res) => {

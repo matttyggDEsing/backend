@@ -1,73 +1,103 @@
-const { pool } = require('../config/db');
-const userModel = require('../models/userModel');
-const orderModel = require('../models/orderModel');
-const ticketModel = require('../models/ticketModel');
-const serviceModel = require('../models/serviceModel');
-const smm = require('../services/smmProvider');
-const { successResponse, errorResponse, paginatedResponse } = require('../utils/response');
-const { paginate } = require('../utils/pagination');
+'use strict';
 
-// ── Stats ──────────────────────────────────────────────────────────────────────
+const { pool }       = require('../config/db');
+const userModel      = require('../models/userModel');
+const orderModel     = require('../models/orderModel');
+const ticketModel    = require('../models/ticketModel');
+const serviceModel   = require('../models/serviceModel');
+const providerModel  = require('../models/providerModel');
+const smm            = require('../services/smmProvider');
+const { successResponse, errorResponse, paginatedResponse } = require('../utils/response');
+const { paginate }   = require('../utils/pagination');
+
+// ── Dashboard ──────────────────────────────────────────────────────────────────
 const getStats = async (req, res, next) => {
   try {
-    const [[users]] = await pool.query(
-      `SELECT COUNT(*) AS total_users,
-              SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) AS active_users
-       FROM users`
-    );
-    const [[orders]] = await pool.query(
-      `SELECT COUNT(*) AS total_orders,
-              COALESCE(SUM(charge), 0) AS total_revenue,
-              COALESCE(SUM(profit), 0) AS total_profit,
-              SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) AS pending_orders
-       FROM orders`
-    );
-    const [[tickets]] = await pool.query(
-      `SELECT COUNT(*) AS total_tickets,
-              SUM(CASE WHEN status = 'open' THEN 1 ELSE 0 END) AS open_tickets
-       FROM tickets`
-    );
+    const [[users]]   = await pool.query(`SELECT COUNT(*) AS total_users, SUM(CASE WHEN status='active' THEN 1 ELSE 0 END) AS active_users FROM users`);
+    const [[orders]]  = await pool.query(`SELECT COUNT(*) AS total_orders, COALESCE(SUM(charge),0) AS total_revenue, COALESCE(SUM(profit),0) AS total_profit, SUM(CASE WHEN status='pending' THEN 1 ELSE 0 END) AS pending_orders FROM orders`);
+    const [[tickets]] = await pool.query(`SELECT COUNT(*) AS total_tickets, SUM(CASE WHEN status='open' THEN 1 ELSE 0 END) AS open_tickets FROM tickets`);
     return successResponse(res, { users, orders, tickets });
-  } catch (err) {
-    next(err);
-  }
+  } catch (err) { next(err); }
+};
+
+const getChart = async (req, res, next) => {
+  try {
+    const range = req.query.range || '30d';
+    const days  = range === '90d' ? 90 : range === '7d' ? 7 : 30;
+    const [rows] = await pool.query(
+      `SELECT DATE(created_at) AS date, COUNT(*) AS orders,
+              COALESCE(SUM(charge),0) AS revenue, COALESCE(SUM(profit),0) AS profit
+       FROM orders WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL ? DAY)
+       GROUP BY DATE(created_at) ORDER BY date ASC`,
+      [days]
+    );
+    const result = [];
+    for (let i = days - 1; i >= 0; i--) {
+      const d = new Date(); d.setDate(d.getDate() - i);
+      const dateStr = d.toISOString().slice(0, 10);
+      const found = rows.find(r => (r.date?.toISOString?.().slice(0, 10) ?? r.date) === dateStr);
+      result.push({ date: dateStr, orders: found ? Number(found.orders) : 0, revenue: found ? Number(found.revenue) : 0, profit: found ? Number(found.profit) : 0 });
+    }
+    return successResponse(res, result);
+  } catch (err) { next(err); }
+};
+
+const getRecentOrders = async (req, res, next) => {
+  try {
+    const limit = Math.min(50, parseInt(req.query.limit) || 10);
+    const [rows] = await pool.query(
+      `SELECT o.id, o.link, o.quantity, o.charge, o.status, o.created_at,
+              s.name AS service_name, u.email AS user_email
+       FROM orders o
+       JOIN services s ON s.id = o.service_id
+       JOIN users   u ON u.id = o.user_id
+       ORDER BY o.created_at DESC LIMIT ?`,
+      [limit]
+    );
+    return successResponse(res, rows);
+  } catch (err) { next(err); }
 };
 
 // ── Users ──────────────────────────────────────────────────────────────────────
 const getUsers = async (req, res, next) => {
   try {
     const { limit, offset, pagination } = paginate(req.query, 0);
-    const { search } = req.query;
-    const { rows, total } = await userModel.getAll({ limit, offset, search });
-    return paginatedResponse(res, rows, {
-      ...pagination,
-      total,
-      totalPages: Math.ceil(total / pagination.perPage),
-    });
-  } catch (err) {
-    next(err);
-  }
+    const { search, status } = req.query;
+    const { rows, total } = await userModel.findAll({ limit, offset, search, status });
+    return paginatedResponse(res, rows, { ...pagination, total, totalPages: Math.ceil(total / pagination.perPage) });
+  } catch (err) { next(err); }
 };
 
 const updateUserStatus = async (req, res, next) => {
   try {
     const { status } = req.body;
-    const allowed = ['active', 'banned', 'pending'];
-    if (!allowed.includes(status)) return errorResponse(res, 'Estado inválido', 400);
+    if (!['active','banned','pending'].includes(status)) return errorResponse(res, 'Estado inválido', 400);
     await userModel.updateStatus(req.params.id, status);
     return successResponse(res, null, 'Estado actualizado');
-  } catch (err) {
-    next(err);
-  }
+  } catch (err) { next(err); }
 };
 
 const adminAddFunds = async (req, res, next) => {
+  const conn = await pool.getConnection();
   try {
-    const { amount } = req.body;
-    await userModel.addFunds(req.params.id, parseFloat(amount));
-    return successResponse(res, null, 'Fondos añadidos');
+    const amount = parseFloat(req.body.amount);
+    const userId = parseInt(req.params.id);
+    if (!amount || amount <= 0) return errorResponse(res, 'Monto inválido', 400);
+    await conn.beginTransaction();
+    const [[userRow]] = await conn.query('SELECT balance FROM users WHERE id = ? FOR UPDATE', [userId]);
+    if (!userRow) { await conn.rollback(); conn.release(); return errorResponse(res, 'Usuario no encontrado', 404); }
+    const balanceBefore = parseFloat(userRow.balance);
+    await conn.query('UPDATE users SET balance = balance + ?, updated_at = NOW() WHERE id = ?', [amount, userId]);
+    await conn.query(
+      `INSERT INTO transactions (user_id, type, amount, balance_before, balance_after, description, method, status)
+       VALUES (?, 'credit', ?, ?, ?, 'Recarga manual por administrador', 'manual', 'completed')`,
+      [userId, amount, balanceBefore, balanceBefore + amount]
+    );
+    await conn.commit(); conn.release();
+    return successResponse(res, { balance: balanceBefore + amount }, 'Fondos añadidos');
   } catch (err) {
-    next(err);
+    try { await conn.rollback(); } catch (_) {}
+    conn.release(); next(err);
   }
 };
 
@@ -77,14 +107,8 @@ const getOrders = async (req, res, next) => {
     const { limit, offset, pagination } = paginate(req.query, 0);
     const { status, userId } = req.query;
     const { rows, total } = await orderModel.getAll({ limit, offset, status, userId });
-    return paginatedResponse(res, rows, {
-      ...pagination,
-      total,
-      totalPages: Math.ceil(total / pagination.perPage),
-    });
-  } catch (err) {
-    next(err);
-  }
+    return paginatedResponse(res, rows, { ...pagination, total, totalPages: Math.ceil(total / pagination.perPage) });
+  } catch (err) { next(err); }
 };
 
 // ── Tickets ────────────────────────────────────────────────────────────────────
@@ -93,129 +117,165 @@ const getTickets = async (req, res, next) => {
     const { limit, offset, pagination } = paginate(req.query, 0);
     const { status } = req.query;
     const { rows, total } = await ticketModel.getAll({ limit, offset, status });
-    return paginatedResponse(res, rows, {
-      ...pagination,
-      total,
-      totalPages: Math.ceil(total / pagination.perPage),
-    });
-  } catch (err) {
-    next(err);
-  }
+    return paginatedResponse(res, rows, { ...pagination, total, totalPages: Math.ceil(total / pagination.perPage) });
+  } catch (err) { next(err); }
 };
 
 const adminReplyTicket = async (req, res, next) => {
   try {
-    const { id } = req.params;
-    const { message } = req.body;
-    await ticketModel.addMessage(id, req.user.id, message, true);
+    await ticketModel.addMessage(req.params.id, req.user.id, req.body.message, true);
     return successResponse(res, null, 'Respuesta enviada');
-  } catch (err) {
-    next(err);
-  }
+  } catch (err) { next(err); }
 };
 
 const adminGetTicketMessages = async (req, res, next) => {
   try {
     const messages = await ticketModel.getMessages(req.params.id);
     return successResponse(res, messages);
-  } catch (err) {
-    next(err);
-  }
+  } catch (err) { next(err); }
 };
 
-// ── Services CRUD ──────────────────────────────────────────────────────────────
+// ── Providers ──────────────────────────────────────────────────────────────────
+const getProviders = async (req, res, next) => {
+  try {
+    const providers = await providerModel.getAll();
+    return successResponse(res, providers);
+  } catch (err) { next(err); }
+};
+
+const createProvider = async (req, res, next) => {
+  try {
+    const { name, api_url, api_key } = req.body;
+    if (!name || !api_url || !api_key) return errorResponse(res, 'name, api_url y api_key son requeridos', 400);
+    const id = await providerModel.create({ name, api_url, api_key });
+    return successResponse(res, { id }, 'Proveedor creado', 201);
+  } catch (err) { next(err); }
+};
+
+// FIX: faltaba updateProvider para PUT /admin/providers/:id
+const updateProvider = async (req, res, next) => {
+  try {
+    const { name, api_url, api_key } = req.body;
+    const updates = [];
+    const values  = [];
+    if (name)    { updates.push('name = ?');    values.push(name); }
+    if (api_url) { updates.push('api_url = ?'); values.push(api_url); }
+    if (api_key) { updates.push('api_key = ?'); values.push(api_key); }
+    if (!updates.length) return errorResponse(res, 'No hay campos para actualizar', 400);
+    values.push(req.params.id);
+    await pool.query(`UPDATE providers SET ${updates.join(', ')}, updated_at = NOW() WHERE id = ?`, values);
+    return successResponse(res, null, 'Proveedor actualizado');
+  } catch (err) { next(err); }
+};
+
+// FIX: faltaba deleteProvider
+const deleteProvider = async (req, res, next) => {
+  try {
+    await pool.query('DELETE FROM providers WHERE id = ?', [req.params.id]);
+    return successResponse(res, null, 'Proveedor eliminado');
+  } catch (err) { next(err); }
+};
+
+const syncProvider = async (req, res, next) => {
+  try {
+    const provider = await providerModel.findById(req.params.id);
+    if (!provider) return errorResponse(res, 'Proveedor no encontrado', 404);
+    const balanceData = await smm.getBalance();
+    await providerModel.updateBalance(provider.id, parseFloat(balanceData.balance));
+    return successResponse(res, { balance: balanceData.balance }, 'Balance sincronizado');
+  } catch (err) { next(err); }
+};
+
+// FIX: faltaba getProviderBalance para GET /admin/providers/:id/balance
+const getProviderBalance = async (req, res, next) => {
+  try {
+    const data = await smm.getBalance();
+    return successResponse(res, { balance: data.balance, currency: data.currency ?? 'USD' });
+  } catch (err) { next(err); }
+};
+
+// ── Services ───────────────────────────────────────────────────────────────────
 const getAllServices = async (req, res, next) => {
   try {
     const { limit, offset, pagination } = paginate(req.query, 0);
-    const { search, category_id } = req.query;
+    const { search, category_id, is_active } = req.query;
     const { rows, total } = await serviceModel.getAll({
-      limit,
-      offset,
-      search,
+      limit, offset, search,
       categoryId: category_id ? parseInt(category_id) : null,
+      isActive:   is_active !== undefined ? parseInt(is_active) : null,
     });
-    return paginatedResponse(res, rows, {
-      ...pagination,
-      total,
-      totalPages: Math.ceil(total / pagination.perPage),
-    });
-  } catch (err) {
-    next(err);
-  }
+    return paginatedResponse(res, rows, { ...pagination, total, totalPages: Math.ceil(total / pagination.perPage) });
+  } catch (err) { next(err); }
 };
 
 const createService = async (req, res, next) => {
   try {
-    const {
-      provider_id, category_id, provider_service_id = 0,
-      name, description = '', rate, min_order, max_order,
-      type = 'Default', refill = false, cancel = false,
-    } = req.body;
-    const id = await serviceModel.create({
-      provider_id, category_id, provider_service_id,
-      name, description, rate: parseFloat(rate),
-      min_order: parseInt(min_order), max_order: parseInt(max_order),
-      type, refill, cancel,
-    });
+    const { provider_id, category_id, provider_service_id = 0, name, description = '', rate, min_order, max_order, type = 'Default', refill = false, cancel = false } = req.body;
+    const id = await serviceModel.create({ provider_id, category_id, provider_service_id, name, description, rate: parseFloat(rate), min_order: parseInt(min_order), max_order: parseInt(max_order), type, refill, cancel });
     return successResponse(res, { id }, 'Servicio creado', 201);
-  } catch (err) {
-    next(err);
-  }
+  } catch (err) { next(err); }
 };
 
 const updateService = async (req, res, next) => {
   try {
     await serviceModel.update(req.params.id, req.body);
     return successResponse(res, null, 'Servicio actualizado');
-  } catch (err) {
-    next(err);
-  }
+  } catch (err) { next(err); }
 };
 
 const deleteService = async (req, res, next) => {
   try {
     await pool.query('DELETE FROM services WHERE id = ?', [req.params.id]);
     return successResponse(res, null, 'Servicio eliminado');
-  } catch (err) {
-    next(err);
-  }
+  } catch (err) { next(err); }
 };
 
 const importServices = async (req, res, next) => {
   try {
-    const { provider_id, category_id } = req.body;
+    const { provider_id, category_id, category_filter } = req.body;
     const smmServices = await smm.getServices();
-
-    let imported = 0;
-    for (const svc of smmServices) {
+    const toImport = category_filter
+      ? smmServices.filter(s => s.category?.toLowerCase().includes(category_filter.toLowerCase()))
+      : smmServices;
+    let imported = 0, skipped = 0;
+    for (const svc of toImport) {
       try {
         await serviceModel.create({
-          provider_id,
-          category_id,
-          provider_service_id: svc.service,
-          name:        svc.name,
-          description: svc.description || '',
-          rate:        parseFloat(svc.rate),
-          min_order:   parseInt(svc.min),
-          max_order:   parseInt(svc.max),
-          type:        svc.type || 'Default',
-          refill:      svc.refill || false,
-          cancel:      svc.cancel || false,
+          provider_id, category_id,
+          provider_service_id: svc.service ?? svc.provider_service_id ?? 0,
+          name: svc.name, description: svc.description || '',
+          rate: parseFloat(svc.rate), min_order: parseInt(svc.min ?? svc.min_order ?? 1),
+          max_order: parseInt(svc.max ?? svc.max_order ?? 1000000),
+          type: svc.type || 'Default', refill: svc.refill || false, cancel: svc.cancel || false,
         });
         imported++;
-      } catch (_) {}
+      } catch (_) { skipped++; }
     }
+    return successResponse(res, { imported, skipped, total: toImport.length }, `${imported} servicios importados`);
+  } catch (err) { next(err); }
+};
 
-    return successResponse(res, { imported }, `${imported} servicios importados`);
-  } catch (err) {
-    next(err);
-  }
+const syncServices = async (req, res, next) => {
+  try {
+    const smmServices = await smm.getServices();
+    const { synced }  = await serviceModel.syncFromProvider(smmServices);
+    return successResponse(res, { synced }, `${synced} servicios sincronizados`);
+  } catch (err) { next(err); }
+};
+
+const getProviderCategories = async (req, res, next) => {
+  try {
+    const smmServices = await smm.getServices();
+    const cats = [...new Set(smmServices.map(s => s.category).filter(Boolean))].sort();
+    return successResponse(res, cats);
+  } catch (err) { next(err); }
 };
 
 module.exports = {
-  getStats,
+  getStats, getChart, getRecentOrders,
   getUsers, updateUserStatus, adminAddFunds,
   getOrders,
   getTickets, adminReplyTicket, adminGetTicketMessages,
-  getAllServices, createService, updateService, deleteService, importServices,
+  getProviders, createProvider, updateProvider, deleteProvider, syncProvider, getProviderBalance,
+  getAllServices, createService, updateService, deleteService, importServices, syncServices, getProviderCategories,
 };

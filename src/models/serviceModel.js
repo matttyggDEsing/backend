@@ -4,7 +4,6 @@ const { pool } = require('../config/db');
 
 /**
  * Retorna servicios activos (con join a categories).
- * Usado por servicesController y apiController.
  */
 const getActive = async ({ categoryId } = {}) => {
   let sql = `
@@ -25,7 +24,6 @@ const getActive = async ({ categoryId } = {}) => {
   return rows;
 };
 
-// Alias para serviceController que llama findAll({ category })
 const findAll = async ({ category } = {}) => {
   let sql = `
     SELECT s.id, s.provider_service_id, s.name, s.description,
@@ -45,39 +43,29 @@ const findAll = async ({ category } = {}) => {
   return rows;
 };
 
-/**
- * Busca un servicio por ID.
- */
 const findById = async (id) => {
   const [rows] = await pool.query(
     `SELECT s.*, c.name AS category, c.slug AS category_slug
      FROM services s
      JOIN categories c ON c.id = s.category_id
-     WHERE s.id = ? AND s.is_active = 1 LIMIT 1`,
+     WHERE s.id = ? LIMIT 1`,
     [id],
   );
   return rows[0] || null;
 };
 
-/**
- * Obtiene categorías con servicios activos.
- */
 const getCategories = async () => {
   const [rows] = await pool.query(
-    `SELECT DISTINCT c.id, c.name, c.slug, c.emoji
+    `SELECT c.id, c.name, c.slug, c.emoji, c.sort_order
      FROM categories c
-     JOIN services s ON s.category_id = c.id AND s.is_active = 1
      WHERE c.is_active = 1
+       AND EXISTS (SELECT 1 FROM services s WHERE s.category_id = c.id AND s.is_active = 1)
      ORDER BY c.sort_order ASC`,
   );
   return rows;
 };
 
-/**
- * Lista todos los servicios con paginación y búsqueda (uso admin).
- * FIX: Esta función faltaba en el export original → adminController fallaba.
- */
-const getAll = async ({ limit = 20, offset = 0, search = null, categoryId = null } = {}) => {
+const getAll = async ({ limit = 20, offset = 0, search = null, categoryId = null, isActive = null } = {}) => {
   const conditions = [];
   const params = [];
 
@@ -88,6 +76,10 @@ const getAll = async ({ limit = 20, offset = 0, search = null, categoryId = null
   if (categoryId) {
     conditions.push('s.category_id = ?');
     params.push(categoryId);
+  }
+  if (isActive !== null) {
+    conditions.push('s.is_active = ?');
+    params.push(isActive);
   }
 
   const where = conditions.length ? 'WHERE ' + conditions.join(' AND ') : '';
@@ -100,8 +92,8 @@ const getAll = async ({ limit = 20, offset = 0, search = null, categoryId = null
             c.name AS category_name, c.id AS category_id,
             p.name AS provider_name
      FROM services s
-     JOIN categories c ON c.id = s.category_id
-     JOIN providers p  ON p.id = s.provider_id
+     LEFT JOIN categories c ON c.id = s.category_id
+     LEFT JOIN providers  p ON p.id = s.provider_id
      ${where}
      ORDER BY s.id DESC
      LIMIT ? OFFSET ?`,
@@ -116,10 +108,6 @@ const getAll = async ({ limit = 20, offset = 0, search = null, categoryId = null
   return { rows, total };
 };
 
-/**
- * Crea un servicio manualmente (uso admin).
- * FIX: Esta función faltaba en el export original → importServices fallaba silenciosamente.
- */
 const create = async ({
   provider_id, category_id, provider_service_id = 0,
   name, description = '', rate, min_order, max_order,
@@ -140,10 +128,6 @@ const create = async ({
   return result.insertId;
 };
 
-/**
- * Actualiza campos de un servicio (uso admin).
- * FIX: Esta función faltaba en el export original → adminController.updateService fallaba.
- */
 const update = async (id, data) => {
   const allowed = [
     'name', 'description', 'rate', 'min_order', 'max_order',
@@ -160,7 +144,6 @@ const update = async (id, data) => {
   }
 
   if (!fields.length) return;
-
   values.push(id);
   await pool.query(
     `UPDATE services SET ${fields.join(', ')}, updated_at = NOW() WHERE id = ?`,
@@ -170,7 +153,8 @@ const update = async (id, data) => {
 
 /**
  * Sincroniza servicios desde Peakerr.
- * Hace upsert por provider_service_id + provider_id.
+ * FIX: Peakerr devuelve { service, name, category, rate, min, max, type, refill, cancel }
+ *      El campo ID del proveedor es `service` (número), no `provider_service_id`.
  */
 const syncFromProvider = async (services) => {
   const conn = await pool.getConnection();
@@ -178,11 +162,12 @@ const syncFromProvider = async (services) => {
     await conn.beginTransaction();
 
     const [[provider]] = await conn.query(
-      `SELECT id FROM providers WHERE status = 'active' ORDER BY id LIMIT 1`,
+      `SELECT id FROM providers ORDER BY id LIMIT 1`,
     );
-    if (!provider) throw new Error('No hay ningún proveedor activo configurado');
+    if (!provider) throw new Error('No hay ningún proveedor configurado');
     const providerId = provider.id;
 
+    // Categoría fallback
     let [[fallbackCat]] = await conn.query(
       `SELECT id FROM categories WHERE slug = 'sin-categoria' LIMIT 1`,
     );
@@ -195,26 +180,40 @@ const syncFromProvider = async (services) => {
 
     let synced = 0;
     for (const s of services) {
+      // FIX: Peakerr usa `s.service` como ID, y puede venir `s.category` como string
+      const providerServiceId = s.service ?? s.provider_service_id ?? 0;
+      const categoryName = s.category ?? 'Sin categoría';
+      const rate    = parseFloat(s.rate ?? 0);
+      const minOrd  = parseInt(s.min ?? s.min_order ?? 1);
+      const maxOrd  = parseInt(s.max ?? s.max_order ?? 1000000);
+      const svcName = s.name ?? 'Servicio sin nombre';
+      const svcType = s.type ?? 'Default';
+      const svcDesc = s.description ?? '';
+      const svcRefill = s.refill ? 1 : 0;
+      const svcCancel = s.cancel ? 1 : 0;
+
+      // Buscar o crear categoría
       let [[cat]] = await conn.query(
         `SELECT id FROM categories WHERE name = ? LIMIT 1`,
-        [s.category],
+        [categoryName],
       );
       if (!cat) {
-        const slug = s.category.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+        const slug = categoryName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'cat';
         await conn.query(
           `INSERT IGNORE INTO categories (name, slug, is_active) VALUES (?, ?, 1)`,
-          [s.category, slug],
+          [categoryName, slug],
         );
         [[cat]] = await conn.query(
           `SELECT id FROM categories WHERE name = ? LIMIT 1`,
-          [s.category],
+          [categoryName],
         );
       }
-      const categoryId = cat ? cat.id : fallbackCat.id;
+      const categoryId = cat?.id ?? fallbackCat.id;
 
+      // Upsert servicio
       const [existing] = await conn.query(
         `SELECT id FROM services WHERE provider_service_id = ? AND provider_id = ? LIMIT 1`,
-        [s.provider_service_id, providerId],
+        [providerServiceId, providerId],
       );
 
       if (existing.length > 0) {
@@ -222,14 +221,10 @@ const syncFromProvider = async (services) => {
           `UPDATE services SET
              name = ?, description = ?, rate = ?,
              min_order = ?, max_order = ?, type = ?,
-             refill = ?, cancel = ?, category_id = ?
+             refill = ?, cancel = ?, category_id = ?, updated_at = NOW()
            WHERE provider_service_id = ? AND provider_id = ?`,
-          [
-            s.name, s.description, s.rate,
-            s.min, s.max, s.type,
-            s.refill ? 1 : 0, s.cancel ? 1 : 0, categoryId,
-            s.provider_service_id, providerId,
-          ],
+          [svcName, svcDesc, rate, minOrd, maxOrd, svcType, svcRefill, svcCancel, categoryId,
+           providerServiceId, providerId],
         );
       } else {
         await conn.query(
@@ -237,12 +232,8 @@ const syncFromProvider = async (services) => {
              (provider_id, category_id, provider_service_id, name, description,
               rate, min_order, max_order, type, refill, cancel, is_active)
            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`,
-          [
-            providerId, categoryId, s.provider_service_id,
-            s.name, s.description, s.rate,
-            s.min, s.max, s.type,
-            s.refill ? 1 : 0, s.cancel ? 1 : 0,
-          ],
+          [providerId, categoryId, providerServiceId, svcName, svcDesc,
+           rate, minOrd, maxOrd, svcType, svcRefill, svcCancel],
         );
       }
       synced++;
@@ -263,8 +254,8 @@ module.exports = {
   findAll,
   findById,
   getCategories,
-  getAll,    // ← FIX: ahora exportado
-  create,    // ← FIX: ahora exportado
-  update,    // ← FIX: ahora exportado
+  getAll,
+  create,
+  update,
   syncFromProvider,
 };

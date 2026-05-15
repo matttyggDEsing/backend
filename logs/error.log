@@ -10,3 +10,236 @@
     at async getTickets (C:\Users\Maty\Desktop\nexapanel\backend\src\controllers\ticketsController.js:8:29)
 2026-05-14 14:23:54 [ERROR] [Mailer] Error enviando email: Invalid login: 535-5.7.8 Username and Password not accepted. For more information, go to
 535 5.7.8  https://support.google.com/mail/?p=BadCredentials a1e0cc1a2514c-95fad742808sm1765665241.8 - gsmtp
+2026-05-14 14:52:39 [ERROR] JsonWebTokenError: invalid signature
+    at C:\Users\Maty\Desktop\nexapanel\backend\node_modules\jsonwebtoken\verify.js:171:19
+    at getSecret (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\jsonwebtoken\verify.js:97:14)
+    at module.exports [as verify] (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\jsonwebtoken\verify.js:101:10)
+    at auth (C:\Users\Maty\Desktop\nexapanel\backend\src\middleware\auth.js:14:25)
+    at Layer.handle [as handle_request] (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\index.js:328:13)
+    at C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\index.js:286:9
+    at router.process_params (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\index.js:175:3)
+2026-05-14 14:52:39 [ERROR] JsonWebTokenError: invalid signature
+    at C:\Users\Maty\Desktop\nexapanel\backend\node_modules\jsonwebtoken\verify.js:171:19
+    at getSecret (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\jsonwebtoken\verify.js:97:14)
+    at module.exports [as verify] (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\jsonwebtoken\verify.js:101:10)
+    at auth (C:\Users\Maty\Desktop\nexapanel\backend\src\middleware\auth.js:14:25)
+    at Layer.handle [as handle_request] (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\index.js:328:13)
+    at C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\index.js:286:9
+    at router.process_params (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\index.js:175:3)
+2026-05-14 14:52:39 [ERROR] JsonWebTokenError: invalid signature
+    at C:\Users\Maty\Desktop\nexapanel\backend\node_modules\jsonwebtoken\verify.js:171:19
+    at getSecret (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\jsonwebtoken\verify.js:97:14)
+    at module.exports [as verify] (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\jsonwebtoken\verify.js:101:10)
+    at auth (C:\Users\Maty\Desktop\nexapanel\backend\src\middleware\auth.js:14:25)
+    at Layer.handle [as handle_request] (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\index.js:328:13)
+    at C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\index.js:286:9
+    at router.process_params (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\index.js:175:3)
+2026-05-14 14:52:39 [ERROR] JsonWebTokenError: invalid signature
+    at C:\Users\Maty\Desktop\nexapanel\backend\node_modules\jsonwebtoken\verify.js:171:19
+    at getSecret (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\jsonwebtoken\verify.js:97:14)
+    at module.exports [as verify] (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\jsonwebtoken\verify.js:101:10)
+    at auth (C:\Users\Maty\Desktop\nexapanel\backend\src\middleware\auth.js:14:25)
+    at Layer.handle [as handle_request] (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\index.js:328:13)
+    at C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\index.js:286:9
+    at router.process_params (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\index.js:175:3)
+2026-05-14 14:52:39 [ERROR] JsonWebTokenError: invalid signature
+    at C:\Users\Maty\Desktop\nexapanel\backend\node_modules\jsonwebtoken\verify.js:171:19
+    at getSecret (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\jsonwebtoken\verify.js:97:14)
+    at module.exports [as verify] (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\jsonwebtoken\verify.js:101:10)
+    at auth (C:\Users\Maty\Desktop\nexapanel\backend\src\middleware\auth.js:14:25)
+    at Layer.handle [as handle_request] (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\index.js:328:13)
+    at C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\index.js:286:9
+    at router.process_params (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\index.js:175:3)
+2026-05-14 14:52:39 [ERROR] JsonWebTokenError: invalid signature
+    at C:\Users\Maty\Desktop\nexapanel\backend\node_modules\jsonwebtoken\verify.js:171:19
+    at getSecret (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\jsonwebtoken\verify.js:97:14)
+    at module.exports [as verify] (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\jsonwebtoken\verify.js:101:10)
+    at auth (C:\Users\Maty\Desktop\nexapanel\backend\src\middleware\auth.js:14:25)
+    at Layer.handle [as handle_request] (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\index.js:328:13)
+    at C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\index.js:286:9
+    at router.process_params (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\index.js:175:3)
+2026-05-14 14:52:39 [ERROR] JsonWebTokenError: invalid signature
+    at C:\Users\Maty\Desktop\nexapanel\backend\node_modules\jsonwebtoken\verify.js:171:19
+    at getSecret (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\jsonwebtoken\verify.js:97:14)
+    at module.exports [as verify] (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\jsonwebtoken\verify.js:101:10)
+    at auth (C:\Users\Maty\Desktop\nexapanel\backend\src\middleware\auth.js:14:25)
+    at Layer.handle [as handle_request] (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\index.js:328:13)
+    at C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\index.js:286:9
+    at router.process_params (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\index.js:175:3)
+2026-05-14 14:52:39 [ERROR] JsonWebTokenError: invalid signature
+    at C:\Users\Maty\Desktop\nexapanel\backend\node_modules\jsonwebtoken\verify.js:171:19
+    at getSecret (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\jsonwebtoken\verify.js:97:14)
+    at module.exports [as verify] (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\jsonwebtoken\verify.js:101:10)
+    at auth (C:\Users\Maty\Desktop\nexapanel\backend\src\middleware\auth.js:14:25)
+    at Layer.handle [as handle_request] (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\index.js:328:13)
+    at C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\index.js:286:9
+    at router.process_params (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\index.js:175:3)
+2026-05-14 15:03:06 [ERROR] TypeError: userModel.getAll is not a function
+    at getUsers (C:\Users\Maty\Desktop\nexapanel\backend\src\controllers\adminController.js:41:45)
+    at Layer.handle [as handle_request] (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\index.js:280:10)
+    at adminOnly (C:\Users\Maty\Desktop\nexapanel\backend\src\middleware\adminOnly.js:7:3)
+    at Layer.handle [as handle_request] (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\layer.js:95:5)
+2026-05-14 15:03:06 [ERROR] TypeError: userModel.getAll is not a function
+    at getUsers (C:\Users\Maty\Desktop\nexapanel\backend\src\controllers\adminController.js:41:45)
+    at Layer.handle [as handle_request] (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\index.js:280:10)
+    at adminOnly (C:\Users\Maty\Desktop\nexapanel\backend\src\middleware\adminOnly.js:7:3)
+    at Layer.handle [as handle_request] (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\layer.js:95:5)
+2026-05-14 15:06:27 [ERROR] TypeError: userModel.getAll is not a function
+    at getUsers (C:\Users\Maty\Desktop\nexapanel\backend\src\controllers\adminController.js:41:45)
+    at Layer.handle [as handle_request] (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\index.js:280:10)
+    at adminOnly (C:\Users\Maty\Desktop\nexapanel\backend\src\middleware\adminOnly.js:7:3)
+    at Layer.handle [as handle_request] (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\layer.js:95:5)
+2026-05-14 15:06:27 [ERROR] TypeError: userModel.getAll is not a function
+    at getUsers (C:\Users\Maty\Desktop\nexapanel\backend\src\controllers\adminController.js:41:45)
+    at Layer.handle [as handle_request] (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\index.js:280:10)
+    at adminOnly (C:\Users\Maty\Desktop\nexapanel\backend\src\middleware\adminOnly.js:7:3)
+    at Layer.handle [as handle_request] (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\layer.js:95:5)
+2026-05-15 01:34:38 [ERROR] Error: Unknown column 'is_staff' in 'field list'
+    at Object.create (C:\Users\Maty\Desktop\nexapanel\backend\src\models\ticketModel.js:21:16)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async createTicket (C:\Users\Maty\Desktop\nexapanel\backend\src\controllers\ticketController.js:62:22)
+2026-05-15 01:45:59 [ERROR] Error: Table 'nexapanel_db.settings' doesn't exist
+    at getSettings (C:\Users\Maty\Desktop\nexapanel\backend\src\controllers\settingsController.js:36:31)
+    at Layer.handle [as handle_request] (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\index.js:280:10)
+    at adminOnly (C:\Users\Maty\Desktop\nexapanel\backend\src\middleware\adminOnly.js:7:3)
+    at Layer.handle [as handle_request] (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\layer.js:95:5)
+2026-05-15 01:45:59 [ERROR] Error: Table 'nexapanel_db.settings' doesn't exist
+    at getSettings (C:\Users\Maty\Desktop\nexapanel\backend\src\controllers\settingsController.js:36:31)
+    at Layer.handle [as handle_request] (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\index.js:280:10)
+    at adminOnly (C:\Users\Maty\Desktop\nexapanel\backend\src\middleware\adminOnly.js:7:3)
+    at Layer.handle [as handle_request] (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\layer.js:95:5)
+2026-05-15 01:46:01 [ERROR] Error: Table 'nexapanel_db.settings' doesn't exist
+    at getSettings (C:\Users\Maty\Desktop\nexapanel\backend\src\controllers\settingsController.js:36:31)
+    at Layer.handle [as handle_request] (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\index.js:280:10)
+    at adminOnly (C:\Users\Maty\Desktop\nexapanel\backend\src\middleware\adminOnly.js:7:3)
+    at Layer.handle [as handle_request] (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\layer.js:95:5)
+2026-05-15 01:46:01 [ERROR] Error: Table 'nexapanel_db.settings' doesn't exist
+    at getSettings (C:\Users\Maty\Desktop\nexapanel\backend\src\controllers\settingsController.js:36:31)
+    at Layer.handle [as handle_request] (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\index.js:280:10)
+    at adminOnly (C:\Users\Maty\Desktop\nexapanel\backend\src\middleware\adminOnly.js:7:3)
+    at Layer.handle [as handle_request] (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\layer.js:95:5)
+2026-05-15 01:46:21 [ERROR] Error: Out of range value for column 'balance' at row 1
+    at adminAddFunds (C:\Users\Maty\Desktop\nexapanel\backend\src\controllers\adminController.js:157:16)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+2026-05-15 01:46:24 [ERROR] Error: Out of range value for column 'balance' at row 1
+    at adminAddFunds (C:\Users\Maty\Desktop\nexapanel\backend\src\controllers\adminController.js:157:16)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+2026-05-15 01:46:25 [ERROR] Error: Out of range value for column 'balance' at row 1
+    at adminAddFunds (C:\Users\Maty\Desktop\nexapanel\backend\src\controllers\adminController.js:157:16)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+2026-05-15 15:31:37 [ERROR] Error: Expression #1 of ORDER BY clause is not in SELECT list, references column 'nexapanel_db.c.sort_order' which is not in SELECT list; this is incompatible with DISTINCT
+    at Object.getCategories (C:\Users\Maty\Desktop\nexapanel\backend\src\models\serviceModel.js:58:29)
+    at listCategories (C:\Users\Maty\Desktop\nexapanel\backend\src\controllers\serviceController.js:41:43)
+    at Layer.handle [as handle_request] (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\index.js:280:10)
+    at auth (C:\Users\Maty\Desktop\nexapanel\backend\src\middleware\auth.js:38:5)
+2026-05-15 15:31:37 [ERROR] Error: Expression #1 of ORDER BY clause is not in SELECT list, references column 'nexapanel_db.c.sort_order' which is not in SELECT list; this is incompatible with DISTINCT
+    at Object.getCategories (C:\Users\Maty\Desktop\nexapanel\backend\src\models\serviceModel.js:58:29)
+    at listCategories (C:\Users\Maty\Desktop\nexapanel\backend\src\controllers\serviceController.js:41:43)
+    at Layer.handle [as handle_request] (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\index.js:280:10)
+    at auth (C:\Users\Maty\Desktop\nexapanel\backend\src\middleware\auth.js:38:5)
+2026-05-15 15:31:56 [ERROR] Error: Expression #1 of ORDER BY clause is not in SELECT list, references column 'nexapanel_db.c.sort_order' which is not in SELECT list; this is incompatible with DISTINCT
+    at Object.getCategories (C:\Users\Maty\Desktop\nexapanel\backend\src\models\serviceModel.js:58:29)
+    at listCategories (C:\Users\Maty\Desktop\nexapanel\backend\src\controllers\serviceController.js:41:43)
+    at Layer.handle [as handle_request] (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\index.js:280:10)
+    at auth (C:\Users\Maty\Desktop\nexapanel\backend\src\middleware\auth.js:38:5)
+2026-05-15 15:31:56 [ERROR] Error: Expression #1 of ORDER BY clause is not in SELECT list, references column 'nexapanel_db.c.sort_order' which is not in SELECT list; this is incompatible with DISTINCT
+    at Object.getCategories (C:\Users\Maty\Desktop\nexapanel\backend\src\models\serviceModel.js:58:29)
+    at listCategories (C:\Users\Maty\Desktop\nexapanel\backend\src\controllers\serviceController.js:41:43)
+    at Layer.handle [as handle_request] (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\index.js:280:10)
+    at auth (C:\Users\Maty\Desktop\nexapanel\backend\src\middleware\auth.js:38:5)

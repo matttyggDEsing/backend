@@ -1,20 +1,5 @@
 'use strict';
 
-/**
- * ordersController.js — VERSIÓN CORREGIDA
- *
- * BUGS ORIGINALES:
- *   1. Connection leak: si el servicio no se encontraba (línea ~1300)
- *      o si la cantidad era inválida (línea ~1309), la función hacía
- *      `return errorResponse(...)` SIN llamar conn.release() → la conexión
- *      quedaba abierta y el pool se agotaba eventualmente.
- *
- *   2. La misma fuga podía ocurrir si fallaba la validación de cantidad.
- *
- * FIX: todas las salidas anticipadas (early returns) llaman conn.release()
- * antes de devolver la respuesta.
- */
-
 const { pool }           = require('../config/db');
 const orderModel         = require('../models/orderModel');
 const serviceModel       = require('../models/serviceModel');
@@ -48,22 +33,62 @@ const getOrderStats = async (req, res, next) => {
   }
 };
 
+/**
+ * GET /api/orders/chart?range=7d|30d|90d
+ * Devuelve órdenes agrupadas por día para el gráfico del dashboard.
+ */
+const getOrderChart = async (req, res, next) => {
+  try {
+    const range = req.query.range || '7d';
+    const days = range === '30d' ? 30 : range === '90d' ? 90 : 7;
+
+    const [rows] = await pool.query(
+      `SELECT
+         DATE(created_at)            AS date,
+         COUNT(*)                    AS orders,
+         COALESCE(SUM(charge), 0)    AS revenue
+       FROM orders
+       WHERE user_id = ?
+         AND created_at >= DATE_SUB(CURDATE(), INTERVAL ? DAY)
+       GROUP BY DATE(created_at)
+       ORDER BY date ASC`,
+      [req.user.id, days]
+    );
+
+    // Rellenar días sin órdenes con ceros para que el gráfico sea continuo
+    const result = [];
+    for (let i = days - 1; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const dateStr = d.toISOString().slice(0, 10);
+      const found = rows.find((r) => r.date?.toISOString?.().slice(0, 10) === dateStr || r.date === dateStr);
+      result.push({
+        date:    dateStr,
+        orders:  found ? Number(found.orders)  : 0,
+        revenue: found ? Number(found.revenue) : 0,
+      });
+    }
+
+    return successResponse(res, result);
+  } catch (err) {
+    next(err);
+  }
+};
+
 const createOrder = async (req, res, next) => {
   const conn = await pool.getConnection();
   try {
     const { service_id, link, quantity } = req.body;
     const userId = req.user.id;
 
-    // 1. Validar servicio
     const service = await serviceModel.findById(service_id);
     if (!service || !service.is_active) {
-      conn.release(); // FIX: era return sin release → leak de conexión
+      conn.release();
       return errorResponse(res, 'Servicio no disponible', 404);
     }
 
-    // 2. Validar cantidad
     if (quantity < service.min_order || quantity > service.max_order) {
-      conn.release(); // FIX: era return sin release → leak de conexión
+      conn.release();
       return errorResponse(
         res,
         `La cantidad debe estar entre ${service.min_order} y ${service.max_order}`,
@@ -71,10 +96,8 @@ const createOrder = async (req, res, next) => {
       );
     }
 
-    // 3. Calcular precio
     const charge = parseFloat(((service.rate / 1000) * quantity).toFixed(4));
 
-    // 4. Verificar balance (dentro de transacción)
     await conn.beginTransaction();
 
     const [[userRow]] = await conn.query(
@@ -90,13 +113,11 @@ const createOrder = async (req, res, next) => {
 
     const balanceBefore = parseFloat(userRow.balance);
 
-    // 5. Debitar balance
     await conn.query(
       'UPDATE users SET balance = balance - ? WHERE id = ?',
       [charge, userId],
     );
 
-    // 6. Crear orden en DB con status pending
     const [orderResult] = await conn.query(
       `INSERT INTO orders
          (user_id, service_id, provider_id, link, quantity, charge, status)
@@ -105,7 +126,6 @@ const createOrder = async (req, res, next) => {
     );
     const orderId = orderResult.insertId;
 
-    // 7. Registrar transacción
     await conn.query(
       `INSERT INTO transactions
          (user_id, order_id, type, amount, balance_before, balance_after, description, status)
@@ -117,7 +137,6 @@ const createOrder = async (req, res, next) => {
       ],
     );
 
-    // 8. Actualizar contadores del usuario
     await conn.query(
       `UPDATE users
        SET total_orders = total_orders + 1,
@@ -129,7 +148,6 @@ const createOrder = async (req, res, next) => {
     await conn.commit();
     conn.release();
 
-    // 9. Enviar al proveedor (fuera de la transacción DB para no bloquearla)
     setImmediate(async () => {
       try {
         const providerResponse = await smm.addOrder({
@@ -159,7 +177,7 @@ const createOrder = async (req, res, next) => {
   } catch (err) {
     try {
       await conn.rollback();
-    } catch (_) { /* ya committed o sin transaction */ }
+    } catch (_) {}
     conn.release();
     next(err);
   }
@@ -177,4 +195,4 @@ const getOrder = async (req, res, next) => {
   }
 };
 
-module.exports = { getOrders, getOrderStats, createOrder, getOrder };
+module.exports = { getOrders, getOrderStats, getOrderChart, createOrder, getOrder };

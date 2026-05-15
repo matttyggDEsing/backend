@@ -1,13 +1,16 @@
+'use strict';
+
 const router = require('express').Router();
-const Joi = require('joi');
-const ticketsController = require('../controllers/ticketsController');
-const auth = require('../middleware/auth');
+const Joi    = require('joi');
+const ticketController = require('../controllers/ticketController');
+const auth     = require('../middleware/auth');
 const validate = require('../middleware/validate');
 
 const createTicketSchema = Joi.object({
   subject:  Joi.string().min(3).max(500).required(),
   message:  Joi.string().min(5).max(5000).required(),
-  priority: Joi.string().valid('low', 'medium', 'high').default('medium'),
+  priority: Joi.string().valid('low', 'medium', 'high', 'urgent').default('medium'),
+  order_id: Joi.number().integer().positive().allow(null).optional(),
 });
 
 const replySchema = Joi.object({
@@ -16,9 +19,10 @@ const replySchema = Joi.object({
 
 router.use(auth);
 
-router.get('/',         ticketsController.getTickets);
-router.post('/',        validate(createTicketSchema), ticketsController.createTicket);
-router.get('/:id',      ticketsController.getTicketById);
-router.post('/:id/reply', validate(replySchema), ticketsController.replyToTicket);
+router.get('/',              ticketController.getTickets);
+router.post('/',             validate(createTicketSchema), ticketController.createTicket);
+router.get('/:id',           ticketController.getTicketById);
+router.post('/:id/reply',    validate(replySchema), ticketController.replyToTicket);
+router.patch('/:id/close',   ticketController.closeTicket);
 
 module.exports = router;
