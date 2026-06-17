@@ -97,6 +97,8 @@ const createOrder = async (req, res, next) => {
     }
 
     const charge = parseFloat(((service.rate / 1000) * quantity).toFixed(4));
+    const providerRate = parseFloat(service.provider_rate || service.rate);
+    const cost = parseFloat(((providerRate / 1000) * quantity).toFixed(4));
 
     await conn.beginTransaction();
 
@@ -122,7 +124,7 @@ const createOrder = async (req, res, next) => {
       `INSERT INTO orders
          (user_id, service_id, provider_id, link, quantity, charge, status)
        VALUES (?, ?, ?, ?, ?, ?, 'pending')`,
-      [userId, service.id, service.provider_id, link, quantity, charge],
+      [userId, service.id, service.provider_id, link, quantity, charge, cost],
     );
     const orderId = orderResult.insertId;
 

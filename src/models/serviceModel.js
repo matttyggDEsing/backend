@@ -217,21 +217,21 @@ const syncFromProvider = async (services) => {
       );
 
       if (existing.length > 0) {
-        await conn.query(
-          `UPDATE services SET
-             name = ?, description = ?, rate = ?,
-             min_order = ?, max_order = ?, type = ?,
-             refill = ?, cancel = ?, category_id = ?, updated_at = NOW()
-           WHERE provider_service_id = ? AND provider_id = ?`,
-          [svcName, svcDesc, rate, minOrd, maxOrd, svcType, svcRefill, svcCancel, categoryId,
-           providerServiceId, providerId],
-        );
+      await conn.query(
+  `UPDATE services SET
+     name = ?, description = ?, provider_rate = ?,
+     min_order = ?, max_order = ?, type = ?,
+     refill = ?, cancel = ?, category_id = ?, updated_at = NOW()
+   WHERE provider_service_id = ? AND provider_id = ?`,
+  [svcName, svcDesc, rate, minOrd, maxOrd, svcType, svcRefill, svcCancel,
+   categoryId, providerServiceId, providerId],
+	);
       } else {
         await conn.query(
           `INSERT INTO services
              (provider_id, category_id, provider_service_id, name, description,
-              rate, min_order, max_order, type, refill, cancel, is_active)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`,
+	 rate, provider_rate, min_order, max_order, type, refill, cancel, is_active)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`,
           [providerId, categoryId, providerServiceId, svcName, svcDesc,
            rate, minOrd, maxOrd, svcType, svcRefill, svcCancel],
         );
@@ -247,8 +247,18 @@ const syncFromProvider = async (services) => {
   } finally {
     conn.release();
   }
+}; 
+const applyMarkup = async (markupPercent, providerId = null) => {
+  const multiplier = 1 + (parseFloat(markupPercent) / 100);
+  let where = 'WHERE provider_rate > 0';
+  const params = [multiplier];
+  if (providerId) { where += ' AND provider_id = ?'; params.push(providerId); }
+  const [result] = await pool.query(
+    `UPDATE services SET rate = ROUND(provider_rate * ?, 4), updated_at = NOW() ${where}`,
+    params,
+  );
+  return { updated: result.affectedRows };
 };
-
 module.exports = {
   getActive,
   findAll,
@@ -258,4 +268,5 @@ module.exports = {
   create,
   update,
   syncFromProvider,
+  applyMarkup,
 };

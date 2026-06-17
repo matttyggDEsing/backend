@@ -1,3 +1,6 @@
+// src/controllers/authController.js — REEMPLAZO COMPLETO
+// FIX: agrega updateProfile y updatePassword
+
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const userModel = require('../models/userModel');
@@ -72,7 +75,7 @@ const login = async (req, res, next) => {
         email: fullUser.email,
         role: fullUser.role,
         balance: fullUser.balance,
-        api_key: fullUser.api_key, // ← incluido para ApiPage
+        api_key: fullUser.api_key,
       },
     });
   } catch (err) {
@@ -100,4 +103,72 @@ const me = async (req, res, next) => {
   }
 };
 
-module.exports = { register, login, me };
+// ─── FIX: updateProfile ───────────────────────────────────────
+/**
+ * PATCH /api/auth/profile
+ * Actualiza nombre y email del usuario autenticado.
+ */
+const updateProfile = async (req, res, next) => {
+  try {
+    const { name, email } = req.body;
+    const userId = req.user.id;
+
+    // Si cambió el email, verificar que no esté tomado por otro usuario
+    if (email !== req.user.email) {
+      const existing = await userModel.findByEmail(email);
+      if (existing && existing.id !== userId) {
+        return errorResponse(res, 'Ese email ya está en uso por otra cuenta', 409);
+      }
+    }
+
+    await userModel.update(userId, { name, email });
+
+    const updatedUser = await userModel.findById(userId);
+    return successResponse(res, {
+      id: updatedUser.id,
+      name: updatedUser.name,
+      email: updatedUser.email,
+      role: updatedUser.role,
+      balance: updatedUser.balance,
+      api_key: updatedUser.api_key,
+      total_orders: updatedUser.total_orders,
+      total_spent: updatedUser.total_spent,
+    }, 'Perfil actualizado correctamente');
+  } catch (err) {
+    next(err);
+  }
+};
+
+// ─── FIX: updatePassword ──────────────────────────────────────
+/**
+ * PATCH /api/auth/password
+ * Actualiza la contraseña verificando la contraseña actual.
+ */
+const updatePassword = async (req, res, next) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    const userId = req.user.id;
+
+    // Necesitamos la contraseña hasheada → usar findByEmail con id
+    const { pool } = require('../config/db');
+    const [[userRow]] = await pool.query(
+      'SELECT password FROM users WHERE id = ? LIMIT 1',
+      [userId],
+    );
+    if (!userRow) return errorResponse(res, 'Usuario no encontrado', 404);
+
+    const passwordMatch = await bcrypt.compare(currentPassword, userRow.password);
+    if (!passwordMatch) {
+      return errorResponse(res, 'La contraseña actual es incorrecta', 401);
+    }
+
+    const hashedNew = await bcrypt.hash(newPassword, 12);
+    await userModel.update(userId, { password: hashedNew });
+
+    return successResponse(res, null, 'Contraseña actualizada correctamente');
+  } catch (err) {
+    next(err);
+  }
+};
+
+module.exports = { register, login, me, updateProfile, updatePassword };

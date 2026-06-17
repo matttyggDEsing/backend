@@ -10,6 +10,25 @@ const smm            = require('../services/smmProvider');
 const { successResponse, errorResponse, paginatedResponse } = require('../utils/response');
 const { paginate }   = require('../utils/pagination');
 
+const fs   = require('fs');
+const path = require('path');
+const SETTINGS_FILE = path.join(__dirname, '../../data/settings.json');
+
+const readSettings = () => {
+  try {
+    if (fs.existsSync(SETTINGS_FILE)) {
+      return JSON.parse(fs.readFileSync(SETTINGS_FILE, 'utf8'));
+    }
+  } catch (_) {}
+  return {};
+};
+
+const writeSettings = (data) => {
+  const dir = path.dirname(SETTINGS_FILE);
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(SETTINGS_FILE, JSON.stringify(data, null, 2), 'utf8');
+};
+
 // ── Dashboard ──────────────────────────────────────────────────────────────────
 const getStats = async (req, res, next) => {
   try {
@@ -270,12 +289,119 @@ const getProviderCategories = async (req, res, next) => {
     return successResponse(res, cats);
   } catch (err) { next(err); }
 };
+const getDeposits = async (req, res, next) => {
+  try {
+    const { limit, offset, pagination } = paginate(req.query, 0);
+    const { status } = req.query;
+    const conditions = [];
+    const params = [];
+    if (status) { conditions.push('dr.status = ?'); params.push(status); }
+    const where = conditions.length ? 'WHERE ' + conditions.join(' AND ') : '';
+    const [rows] = await pool.query(
+      `SELECT dr.id, dr.user_id, dr.amount, dr.method, dr.status,
+              dr.external_ref, dr.notes, dr.created_at, dr.updated_at,
+              u.name AS user_name, u.email AS user_email
+       FROM deposit_requests dr
+       JOIN users u ON u.id = dr.user_id
+       ${where}
+       ORDER BY dr.created_at DESC LIMIT ? OFFSET ?`,
+      [...params, limit, offset],
+    );
+    const [[{ total }]] = await pool.query(
+      `SELECT COUNT(*) AS total FROM deposit_requests dr ${where}`, params,
+    );
+    return paginatedResponse(res, rows, { ...pagination, total, totalPages: Math.ceil(total / pagination.perPage) });
+  } catch (err) { next(err); }
+};
+
+const approveDeposit = async (req, res, next) => {
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+    const [[deposit]] = await conn.query(
+      `SELECT * FROM deposit_requests WHERE id = ? AND status = 'pending' FOR UPDATE`,
+      [req.params.id],
+    );
+    if (!deposit) { await conn.rollback(); conn.release(); return errorResponse(res, 'No encontrado o ya procesado', 404); }
+    await conn.query(`UPDATE deposit_requests SET status = 'completed', updated_at = NOW() WHERE id = ?`, [deposit.id]);
+    const [[userRow]] = await conn.query('SELECT balance FROM users WHERE id = ? FOR UPDATE', [deposit.user_id]);
+    const balanceBefore = parseFloat(userRow.balance);
+    const amount = parseFloat(deposit.amount);
+    await conn.query('UPDATE users SET balance = balance + ?, updated_at = NOW() WHERE id = ?', [amount, deposit.user_id]);
+    await conn.query(
+      `INSERT INTO transactions (user_id, type, amount, balance_before, balance_after, description, method, reference, status)
+       VALUES (?, 'credit', ?, ?, ?, ?, ?, ?, 'completed')`,
+      [deposit.user_id, amount, balanceBefore, balanceBefore + amount,
+       `Depósito aprobado (${deposit.method})`, deposit.method, String(deposit.id)],
+    );
+    await conn.commit(); conn.release();
+    return successResponse(res, { newBalance: balanceBefore + amount }, 'Depósito aprobado');
+  } catch (err) { try { await conn.rollback(); } catch (_) {} conn.release(); next(err); }
+};
+
+const rejectDeposit = async (req, res, next) => {
+  try {
+    const { reason = '' } = req.body;
+    const [result] = await pool.query(
+      `UPDATE deposit_requests SET status = 'rejected', notes = ?, updated_at = NOW() WHERE id = ? AND status = 'pending'`,
+      [reason || 'Rechazado por administrador', req.params.id],
+    );
+    if (result.affectedRows === 0) return errorResponse(res, 'No encontrado o ya procesado', 404);
+    return successResponse(res, null, 'Depósito rechazado');
+  } catch (err) { next(err); }
+};
+const applyMarkup = async (req, res, next) => {
+  try {
+    const { markup_percent, provider_id = null } = req.body;
+    if (isNaN(parseFloat(markup_percent)) || parseFloat(markup_percent) < 0)
+      return errorResponse(res, 'markup_percent inválido', 400);
+    const { updated } = await serviceModel.applyMarkup(parseFloat(markup_percent), provider_id ? parseInt(provider_id) : null);
+    return successResponse(res, { updated }, `Markup del ${markup_percent}% aplicado a ${updated} servicios`);
+  } catch (err) { next(err); }
+};
+
+const deleteUser = async (req, res, next) => {
+  try {
+    const userId = parseInt(req.params.id);
+    if (userId === req.user.id) {
+      return errorResponse(res, 'No podés eliminar tu propia cuenta', 400);
+    }
+    await pool.query('DELETE FROM users WHERE id = ? AND role != "admin"', [userId]);
+    return successResponse(res, null, 'Usuario eliminado');
+  } catch (err) { next(err); }
+};
+
+const updateUserRole = async (req, res, next) => {
+  try {
+    const { role } = req.body;
+    if (!['user', 'admin'].includes(role)) {
+      return errorResponse(res, 'Rol inválido. Usa: user, admin', 400);
+    }
+    await userModel.updateRole(req.params.id, role);
+    return successResponse(res, null, 'Rol actualizado');
+  } catch (err) { next(err); }
+};
+const getSettings = async (req, res, next) => {
+  try {
+    const settings = readSettings();
+    return successResponse(res, settings);
+  } catch (err) { next(err); }
+};
+
+const updateSettings = async (req, res, next) => {
+  try {
+    const current = readSettings();
+    const updated = { ...current, ...req.body };
+    writeSettings(updated);
+    return successResponse(res, updated, 'Configuración guardada');
+  } catch (err) { next(err); }
+};
 
 module.exports = {
-  getStats, getChart, getRecentOrders,
-  getUsers, updateUserStatus, adminAddFunds,
-  getOrders,
-  getTickets, adminReplyTicket, adminGetTicketMessages,
+  getStats, getChart, getRecentOrders, applyMarkup,
+  getUsers, updateUserStatus, adminAddFunds, deleteUser, updateUserRole,
+  getOrders, rejectDeposit, approveDeposit, getDeposits,
+  getTickets, adminReplyTicket, adminGetTicketMessages, getSettings, updateSettings,
   getProviders, createProvider, updateProvider, deleteProvider, syncProvider, getProviderBalance,
   getAllServices, createService, updateService, deleteService, importServices, syncServices, getProviderCategories,
 };

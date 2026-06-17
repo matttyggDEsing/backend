@@ -62,6 +62,8 @@ router.get('/orders/recent',    adminController.getRecentOrders);
 router.get('/users',                                              adminController.getUsers);
 router.patch('/users/:id/status', validate(updateStatusSchema),  adminController.updateUserStatus);
 router.post('/users/:id/add-funds', validate(addFundsSchema),    adminController.adminAddFunds);
+router.delete('/users/:id',               adminController.deleteUser);
+router.patch('/users/:id/role',            adminController.updateUserRole);
 router.post('/users/:id/balance',   validate(addFundsSchema),    adminController.adminAddFunds); // alias frontend
 
 // ── Orders ─────────────────────────────────────────────────────────────────────
@@ -88,5 +90,11 @@ router.get('/services',                     adminController.getAllServices);
 router.post('/services', validate(createServiceSchema), adminController.createService);
 router.patch('/services/:id', validate(updateServiceSchema), adminController.updateService);
 router.delete('/services/:id',              adminController.deleteService);
+router.post('/services/apply-markup', adminController.applyMarkup);
 
+router.get('/deposits',              adminController.getDeposits);
+router.post('/deposits/:id/approve', adminController.approveDeposit);
+router.post('/deposits/:id/reject',  adminController.rejectDeposit);
+router.get('/settings',   adminController.getSettings);
+router.patch('/settings', adminController.updateSettings);
 module.exports = router;

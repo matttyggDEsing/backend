@@ -47,6 +47,9 @@ app.use(morgan('combined', {
   skip: (req) => req.path === '/health',
 }));
 
+// ── Mantenimiento ──────────────────────────────────────────────────────────
+app.use(require('./src/middleware/maintenance'));
+
 // ── Health check ───────────────────────────────────────────────────────────
 app.get('/health', (req, res) => res.json({ status: 'ok', ts: new Date().toISOString() }));
 
