@@ -2320,3 +2320,24 @@
 2026-06-03 11:33:05 [WARN] [Redis] Error:
 2026-06-03 11:33:06 [WARN] [Redis] Error:
 2026-06-03 11:33:06 [WARN] [Redis] No se pudo conectar. Cache desactivado.
+2026-06-17 16:48:33 [INFO] [DB] Conexión a MySQL establecida correctamente
+2026-06-17 16:48:33 [INFO] [Redis] Conexión establecida
+2026-06-17 16:48:33 [INFO] [Redis] Ping OK
+2026-06-17 16:48:33 [INFO] [OrderProcessor] Polling iniciado (cada 60s)
+2026-06-17 16:48:33 [INFO] 🚀 NexaPanel backend corriendo en puerto 5000 [development]
+2026-06-17 16:48:40 [INFO] ::1 - - [17/Jun/2026:19:48:40 +0000] "GET /api/orders/stats HTTP/1.1" 503 81 "http://localhost:3000/dashboard" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36"
+2026-06-17 16:48:40 [INFO] ::1 - - [17/Jun/2026:19:48:40 +0000] "GET /api/orders/chart?range=7d HTTP/1.1" 503 81 "http://localhost:3000/dashboard" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36"
+2026-06-17 16:48:40 [INFO] ::1 - - [17/Jun/2026:19:48:40 +0000] "GET /api/orders?perPage=5&page=1 HTTP/1.1" 503 81 "http://localhost:3000/dashboard" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36"
+2026-06-17 16:48:40 [INFO] ::1 - - [17/Jun/2026:19:48:40 +0000] "GET /api/wallet/balance HTTP/1.1" 503 81 "http://localhost:3000/dashboard" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36"
+2026-06-17 16:48:40 [INFO] ::1 - - [17/Jun/2026:19:48:40 +0000] "GET /api/orders/stats HTTP/1.1" 503 81 "http://localhost:3000/dashboard" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36"
+2026-06-17 16:48:40 [INFO] ::1 - - [17/Jun/2026:19:48:40 +0000] "GET /api/orders/chart?range=7d HTTP/1.1" 503 81 "http://localhost:3000/dashboard" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36"
+2026-06-17 16:48:40 [INFO] ::1 - - [17/Jun/2026:19:48:40 +0000] "GET /api/orders?perPage=5&page=1 HTTP/1.1" 503 81 "http://localhost:3000/dashboard" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36"
+2026-06-17 16:48:40 [INFO] ::1 - - [17/Jun/2026:19:48:40 +0000] "GET /api/wallet/balance HTTP/1.1" 503 81 "http://localhost:3000/dashboard" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36"
+2026-06-17 16:51:20 [INFO] ::1 - - [17/Jun/2026:19:51:20 +0000] "GET /api/orders/stats HTTP/1.1" 503 81 "http://localhost:3000/dashboard" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36"
+2026-06-17 16:51:20 [INFO] ::1 - - [17/Jun/2026:19:51:20 +0000] "GET /api/orders/chart?range=7d HTTP/1.1" 503 81 "http://localhost:3000/dashboard" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36"
+2026-06-17 16:51:20 [INFO] ::1 - - [17/Jun/2026:19:51:20 +0000] "GET /api/orders?perPage=5&page=1 HTTP/1.1" 503 81 "http://localhost:3000/dashboard" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36"
+2026-06-17 16:51:20 [INFO] ::1 - - [17/Jun/2026:19:51:20 +0000] "GET /api/wallet/balance HTTP/1.1" 503 81 "http://localhost:3000/dashboard" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36"
+2026-06-17 16:51:20 [INFO] ::1 - - [17/Jun/2026:19:51:20 +0000] "GET /api/orders/stats HTTP/1.1" 503 81 "http://localhost:3000/dashboard" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36"
+2026-06-17 16:51:20 [INFO] ::1 - - [17/Jun/2026:19:51:20 +0000] "GET /api/orders/chart?range=7d HTTP/1.1" 503 81 "http://localhost:3000/dashboard" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36"
+2026-06-17 16:51:20 [INFO] ::1 - - [17/Jun/2026:19:51:20 +0000] "GET /api/orders?perPage=5&page=1 HTTP/1.1" 503 81 "http://localhost:3000/dashboard" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36"
+2026-06-17 16:51:20 [INFO] ::1 - - [17/Jun/2026:19:51:20 +0000] "GET /api/wallet/balance HTTP/1.1" 503 81 "http://localhost:3000/dashboard" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36"
