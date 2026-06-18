@@ -18,3 +18,6 @@ INSERT IGNORE INTO `settings` (`key`, `value`) VALUES
   ('payment_methods',   '{"crypto":{"enabled":false,"address":"","network":""},"paypal":{"enabled":false,"email":""},"stripe":{"enabled":false,"public_key":"","secret_key":""},"manual":{"enabled":true,"instructions":""}}'),
   ('exchange_rates',    '{"USD":1,"ARS":1000,"BRL":5,"EUR":0.92}'),
   ('general',           '{"site_name":"NexaPanel","site_url":"","support_email":"","currency":"USD","min_deposit":1,"max_deposit":10000}');
+
+
+

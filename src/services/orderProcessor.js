@@ -1,5 +1,6 @@
 const cron = require('node-cron');
 const orderModel = require('../models/orderModel');
+const providerModel = require('../models/providerModel');
 const { pool } = require('../config/db');
 const smm = require('./smmProvider');
 const logger = require('../utils/logger');
@@ -31,7 +32,16 @@ const processOrders = async () => {
       byProvider[order.provider_id].push(order);
     }
 
-    for (const [_providerId, providerOrders] of Object.entries(byProvider)) {
+    for (const [providerId, providerOrders] of Object.entries(byProvider)) {
+      // FIX: antes se consultaba el estado contra el proveedor global de .env
+      // sin importar a qué proveedor pertenecía cada grupo de órdenes. Ahora
+      // se buscan las credenciales reales del proveedor antes de consultar.
+      const provider = await providerModel.findById(providerId);
+      if (!provider) {
+        logger.error(`[OrderProcessor] Proveedor #${providerId} no encontrado, se omiten ${providerOrders.length} órdenes`);
+        continue;
+      }
+
       // Procesar en lotes de BATCH_SIZE
       for (let i = 0; i < providerOrders.length; i += BATCH_SIZE) {
         const batch = providerOrders.slice(i, i + BATCH_SIZE);
@@ -40,7 +50,7 @@ const processOrders = async () => {
         if (!ids.length) continue;
 
         try {
-          const statusData = await smm.getMultipleStatus(ids);
+          const statusData = await smm.getMultipleStatus(ids, provider.api_url, provider.api_key);
 
           for (const order of batch) {
             const info = statusData[order.provider_order_id];
@@ -82,3 +92,6 @@ const start = () => {
 };
 
 module.exports = { start, processOrders };
+
+
+

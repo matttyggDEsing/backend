@@ -28,3 +28,6 @@ CREATE TABLE IF NOT EXISTS `markup_config` (
 
 -- Markup global por defecto: +200% (precio = cost * 3)
 INSERT IGNORE INTO `markup_config` (`category_id`, `markup_pct`) VALUES (NULL, 200.00);
+
+
+

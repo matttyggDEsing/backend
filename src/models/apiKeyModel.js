@@ -16,3 +16,6 @@ const log = async ({ user_id, action, request_data, response_data, ip, status_co
 };
 
 module.exports = { log };
+
+
+

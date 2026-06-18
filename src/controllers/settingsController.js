@@ -159,10 +159,14 @@ const saveProviderSettings = async (req, res, next) => {
   }
 };
 
-// ─── GET /api/admin/settings/provider/balance ─────────────────────────────────
+// ─── GET /api/admin/settings/provider/balance?id=N ────────────────────────────
 const getProviderBalance = async (req, res, next) => {
   try {
-    const data = await smm.getBalance();
+    const id = req.query.id;
+    const provider = id ? await providerModel.findById(id) : (await providerModel.getAll())[0];
+    if (!provider) return errorResponse(res, 'Proveedor no encontrado', 404);
+    const full = await providerModel.findById(provider.id); // necesitamos api_key, getAll() no la trae
+    const data = await smm.getBalance(full.api_url, full.api_key);
     return successResponse(res, { balance: data.balance, currency: data.currency ?? 'USD' });
   } catch (err) {
     next(err);
@@ -211,3 +215,6 @@ module.exports = {
   getGeneralSettings,
   setGeneralSettings,
 };
+
+
+

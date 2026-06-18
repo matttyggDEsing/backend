@@ -152,20 +152,27 @@ const update = async (id, data) => {
 };
 
 /**
- * Sincroniza servicios desde Peakerr.
- * FIX: Peakerr devuelve { service, name, category, rate, min, max, type, refill, cancel }
- *      El campo ID del proveedor es `service` (número), no `provider_service_id`.
+ * Sincroniza servicios desde un proveedor SMM.
+ * FIX: antes ignoraba de qué proveedor venían los servicios y siempre los
+ * asociaba al primero de la tabla `providers` (ORDER BY id LIMIT 1). Con más
+ * de un proveedor configurado, sincronizar el proveedor B terminaba guardando
+ * sus servicios como si fueran del proveedor A.
+ * FIX: el campo ID del proveedor puede venir como `service` (formato Peakerr)
+ *      en vez de `provider_service_id`, y `category` puede venir como string.
  */
-const syncFromProvider = async (services) => {
+const syncFromProvider = async (services, providerId) => {
   const conn = await pool.getConnection();
   try {
     await conn.beginTransaction();
 
+    if (!providerId) {
+      throw new Error('syncFromProvider requiere un providerId explícito');
+    }
     const [[provider]] = await conn.query(
-      `SELECT id FROM providers ORDER BY id LIMIT 1`,
+      `SELECT id FROM providers WHERE id = ? LIMIT 1`,
+      [providerId],
     );
-    if (!provider) throw new Error('No hay ningún proveedor configurado');
-    const providerId = provider.id;
+    if (!provider) throw new Error('Proveedor no encontrado');
 
     // Categoría fallback
     let [[fallbackCat]] = await conn.query(
@@ -270,3 +277,5 @@ module.exports = {
   syncFromProvider,
   applyMarkup,
 };
+
+

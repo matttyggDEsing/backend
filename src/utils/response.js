@@ -37,3 +37,5 @@ const errorResponse = (res, message, statusCode = 400, errors = null) => {
 };
 
 module.exports = { successResponse, paginatedResponse, errorResponse };
+
+

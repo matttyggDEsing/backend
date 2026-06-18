@@ -6,3 +6,6 @@ const { publicApi: publicApiLimiter } = require('../middleware/rateLimiter');
 router.post('/', publicApiLimiter, apiController.publicApi);
 
 module.exports = router;
+
+
+

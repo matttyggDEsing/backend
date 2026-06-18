@@ -18,3 +18,6 @@ router.post('/',           validate(createProviderSchema), providersController.c
 router.post('/:id/sync',   providersController.syncProvider);
 
 module.exports = router;
+
+
+

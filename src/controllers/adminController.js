@@ -9,25 +9,14 @@ const providerModel  = require('../models/providerModel');
 const smm            = require('../services/smmProvider');
 const { successResponse, errorResponse, paginatedResponse } = require('../utils/response');
 const { paginate }   = require('../utils/pagination');
+const logger          = require('../utils/logger');
 
-const fs   = require('fs');
-const path = require('path');
-const SETTINGS_FILE = path.join(__dirname, '../../data/settings.json');
-
-const readSettings = () => {
-  try {
-    if (fs.existsSync(SETTINGS_FILE)) {
-      return JSON.parse(fs.readFileSync(SETTINGS_FILE, 'utf8'));
-    }
-  } catch (_) {}
-  return {};
-};
-
-const writeSettings = (data) => {
-  const dir = path.dirname(SETTINGS_FILE);
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(SETTINGS_FILE, JSON.stringify(data, null, 2), 'utf8');
-};
+// NOTA: la configuración del panel (incluyendo modo mantenimiento) vive en la
+// tabla `settings` de la base de datos y se maneja desde settingsController.js
+// / routes/settings.js. Antes había acá una segunda implementación basada en
+// un archivo data/settings.json que tapaba esas rutas (mismo path, registrada
+// antes en server.js) y dejaba el sistema "bueno" como código muerto. Se quitó
+// para que quede una sola fuente de verdad.
 
 // ── Dashboard ──────────────────────────────────────────────────────────────────
 const getStats = async (req, res, next) => {
@@ -195,20 +184,43 @@ const deleteProvider = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
+// FIX: el botón "Sincronizar" del panel espera importar/actualizar el catálogo
+// de servicios de ese proveedor (usa `data.synced` en la respuesta), pero esta
+// función solo refrescaba el balance y nunca tocaba los servicios. Ahora trae
+// el catálogo real del proveedor (con sus propias credenciales) y lo sincroniza.
 const syncProvider = async (req, res, next) => {
+  try {
+    const id = parseInt(req.params.id);
+    const provider = await providerModel.findById(id);
+    if (!provider) return errorResponse(res, 'Proveedor no encontrado', 404);
+
+    const rawServices = await smm.getServices(provider.api_url, provider.api_key);
+    if (!Array.isArray(rawServices) || rawServices.length === 0) {
+      return errorResponse(res, 'El proveedor no devolvió servicios', 502);
+    }
+
+    const { synced } = await serviceModel.syncFromProvider(rawServices, id);
+
+    await pool.query(
+      `UPDATE providers SET last_sync = NOW(), status = 'active' WHERE id = ?`,
+      [id],
+    );
+
+    logger.info(`Admin ${req.user.id} synced provider #${id}: ${synced} services`);
+    return successResponse(res, { synced }, `${synced} servicios sincronizados`);
+  } catch (err) {
+    await pool.query(`UPDATE providers SET status = 'error' WHERE id = ?`, [parseInt(req.params.id)]).catch(() => {});
+    next(err);
+  }
+};
+
+// GET /admin/providers/:id/balance
+const getProviderBalance = async (req, res, next) => {
   try {
     const provider = await providerModel.findById(req.params.id);
     if (!provider) return errorResponse(res, 'Proveedor no encontrado', 404);
-    const balanceData = await smm.getBalance();
-    await providerModel.updateBalance(provider.id, parseFloat(balanceData.balance));
-    return successResponse(res, { balance: balanceData.balance }, 'Balance sincronizado');
-  } catch (err) { next(err); }
-};
-
-// FIX: faltaba getProviderBalance para GET /admin/providers/:id/balance
-const getProviderBalance = async (req, res, next) => {
-  try {
-    const data = await smm.getBalance();
+    const data = await smm.getBalance(provider.api_url, provider.api_key);
+    await providerModel.updateBalance(provider.id, parseFloat(data.balance));
     return successResponse(res, { balance: data.balance, currency: data.currency ?? 'USD' });
   } catch (err) { next(err); }
 };
@@ -252,7 +264,10 @@ const deleteService = async (req, res, next) => {
 const importServices = async (req, res, next) => {
   try {
     const { provider_id, category_id, category_filter } = req.body;
-    const smmServices = await smm.getServices();
+    const provider = await providerModel.findById(provider_id);
+    if (!provider) return errorResponse(res, 'Proveedor no encontrado', 404);
+
+    const smmServices = await smm.getServices(provider.api_url, provider.api_key);
     const toImport = category_filter
       ? smmServices.filter(s => s.category?.toLowerCase().includes(category_filter.toLowerCase()))
       : smmServices;
@@ -276,15 +291,23 @@ const importServices = async (req, res, next) => {
 
 const syncServices = async (req, res, next) => {
   try {
-    const smmServices = await smm.getServices();
-    const { synced }  = await serviceModel.syncFromProvider(smmServices);
+    const { provider_id } = req.body;
+    const provider = await providerModel.findById(provider_id);
+    if (!provider) return errorResponse(res, 'Proveedor no encontrado (provider_id requerido)', 400);
+
+    const smmServices = await smm.getServices(provider.api_url, provider.api_key);
+    const { synced }  = await serviceModel.syncFromProvider(smmServices, provider.id);
     return successResponse(res, { synced }, `${synced} servicios sincronizados`);
   } catch (err) { next(err); }
 };
 
 const getProviderCategories = async (req, res, next) => {
   try {
-    const smmServices = await smm.getServices();
+    const provider_id = req.query.provider_id;
+    const provider = await providerModel.findById(provider_id);
+    if (!provider) return errorResponse(res, 'Proveedor no encontrado (provider_id requerido)', 400);
+
+    const smmServices = await smm.getServices(provider.api_url, provider.api_key);
     const cats = [...new Set(smmServices.map(s => s.category).filter(Boolean))].sort();
     return successResponse(res, cats);
   } catch (err) { next(err); }
@@ -381,27 +404,13 @@ const updateUserRole = async (req, res, next) => {
     return successResponse(res, null, 'Rol actualizado');
   } catch (err) { next(err); }
 };
-const getSettings = async (req, res, next) => {
-  try {
-    const settings = readSettings();
-    return successResponse(res, settings);
-  } catch (err) { next(err); }
-};
-
-const updateSettings = async (req, res, next) => {
-  try {
-    const current = readSettings();
-    const updated = { ...current, ...req.body };
-    writeSettings(updated);
-    return successResponse(res, updated, 'Configuración guardada');
-  } catch (err) { next(err); }
-};
-
 module.exports = {
   getStats, getChart, getRecentOrders, applyMarkup,
   getUsers, updateUserStatus, adminAddFunds, deleteUser, updateUserRole,
   getOrders, rejectDeposit, approveDeposit, getDeposits,
-  getTickets, adminReplyTicket, adminGetTicketMessages, getSettings, updateSettings,
+  getTickets, adminReplyTicket, adminGetTicketMessages,
   getProviders, createProvider, updateProvider, deleteProvider, syncProvider, getProviderBalance,
   getAllServices, createService, updateService, deleteService, importServices, syncServices, getProviderCategories,
 };
+
+

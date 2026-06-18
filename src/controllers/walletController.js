@@ -139,3 +139,6 @@ const getDeposits = async (req, res, next) => {
 };
 
 module.exports = { getWallet, getBalance, getTransactions, requestDeposit, getDeposits };
+
+
+

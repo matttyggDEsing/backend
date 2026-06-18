@@ -35,3 +35,6 @@ const updateStatus = async (id, status) => {
 };
 
 module.exports = { getAll, findById, create, updateBalance, updateStatus };
+
+
+

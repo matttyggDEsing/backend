@@ -1,37 +1,8 @@
 'use strict';
 
 const serviceModel = require('../models/serviceModel');
-const smmService = require('../services/smmService');
 const { successResponse, errorResponse } = require('../utils/response');
 const logger = require('../utils/logger');
-
-/**
- * GET /api/services
- * Lista los servicios activos. Expone el rate tal cual (precio de venta).
- */
-const listServices = async (req, res, next) => {
-  try {
-    const { category } = req.query;
-    const services = await serviceModel.findAll({ category });
-
-    const output = services.map((s) => ({
-      id: s.id,
-      name: s.name,
-      category: s.category,
-      type: s.type,
-      rate: parseFloat(s.rate),
-      min: s.min_order,
-      max: s.max_order,
-      refill: !!s.refill,
-      cancel: !!s.cancel,
-      description: s.description,
-    }));
-
-    return successResponse(res, output);
-  } catch (err) {
-    next(err);
-  }
-};
 
 /**
  * GET /api/services/categories
@@ -70,21 +41,7 @@ const getService = async (req, res, next) => {
   }
 };
 
-/**
- * POST /api/admin/services/sync
- * Sincroniza servicios desde Peakerr.
- */
-const syncServices = async (req, res, next) => {
-  try {
-    logger.info('[ServiceController] Starting sync with provider...');
-    const providerServices = await smmService.fetchServices();
-    const result = await serviceModel.syncFromProvider(providerServices);
-    logger.info(`[ServiceController] Sync complete: ${result.synced} services`);
-    return successResponse(res, result, `Sincronización exitosa: ${result.synced} servicios`);
-  } catch (err) {
-    logger.error(`[ServiceController] Sync failed: ${err.message}`);
-    next(err);
-  }
-};
+module.exports = { listCategories, getService };
 
-module.exports = { listServices, listCategories, getService, syncServices };
+
+

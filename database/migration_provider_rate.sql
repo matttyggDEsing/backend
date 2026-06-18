@@ -11,3 +11,6 @@ ALTER TABLE services
 
 -- Inicializar provider_rate con el rate actual (hasta que se re-sincronice)
 UPDATE services SET provider_rate = rate WHERE provider_rate = 0;
+
+
+

@@ -17,3 +17,6 @@ const paginate = (query, total) => {
 };
 
 module.exports = { paginate };
+
+
+

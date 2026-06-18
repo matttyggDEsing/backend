@@ -14,3 +14,6 @@ const findById = async (id) => {
 };
 
 module.exports = { getAll, findById };
+
+
+

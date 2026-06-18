@@ -21,3 +21,6 @@ router.post('/deposit',      validate(depositSchema), walletController.requestDe
 router.post('/add-funds',    validate(depositSchema), walletController.requestDeposit); // alias
 
 module.exports = router;
+
+
+

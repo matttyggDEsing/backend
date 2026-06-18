@@ -23,3 +23,5 @@ router.patch('/profile',  auth, authController.updateProfile);
 router.patch('/password', auth, authController.updatePassword);
 
 module.exports = router;
+
+

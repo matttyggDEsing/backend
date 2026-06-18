@@ -3,6 +3,7 @@
 const { pool }           = require('../config/db');
 const orderModel         = require('../models/orderModel');
 const serviceModel       = require('../models/serviceModel');
+const providerModel      = require('../models/providerModel');
 const transactionModel   = require('../models/transactionModel');
 const smm                = require('../services/smmProvider');
 const { successResponse, errorResponse, paginatedResponse } = require('../utils/response');
@@ -122,8 +123,8 @@ const createOrder = async (req, res, next) => {
 
     const [orderResult] = await conn.query(
       `INSERT INTO orders
-         (user_id, service_id, provider_id, link, quantity, charge, status)
-       VALUES (?, ?, ?, ?, ?, ?, 'pending')`,
+         (user_id, service_id, provider_id, link, quantity, charge, cost, status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, 'pending')`,
       [userId, service.id, service.provider_id, link, quantity, charge, cost],
     );
     const orderId = orderResult.insertId;
@@ -152,10 +153,17 @@ const createOrder = async (req, res, next) => {
 
     setImmediate(async () => {
       try {
+        // FIX: antes se llamaba a smm.addOrder sin pasar las credenciales del
+        // proveedor real del servicio (service.provider_id) — siempre pegaba
+        // contra el proveedor global de .env, sin importar a cuál proveedor
+        // pertenecía el servicio comprado.
+        const provider = await providerModel.findById(service.provider_id);
         const providerResponse = await smm.addOrder({
           service:  service.provider_service_id,
           link,
           quantity,
+          apiUrl: provider?.api_url,
+          apiKey: provider?.api_key,
         });
         const providerOrderId = providerResponse?.order?.toString() ?? null;
         if (providerOrderId) {
@@ -198,3 +206,5 @@ const getOrder = async (req, res, next) => {
 };
 
 module.exports = { getOrders, getOrderStats, getOrderChart, createOrder, getOrder };
+
+

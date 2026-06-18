@@ -96,11 +96,41 @@ const getPendingOrders = async () => {
   return rows;
 };
 
-const cancelWithRefund = async (conn, orderId) => {
+// FIX: esta función se llamaba "cancelWithRefund" pero nunca devolvía nada al
+// usuario — solo cambiaba el status. Tampoco validaba dueño ni estado de la
+// orden (podías "cancelar" una orden ya completada). Ahora sí reembolsa el
+// `charge` real, valida que la orden sea del usuario y que esté en un estado
+// seguro para cancelar (todavía no se envió al proveedor o falló el envío).
+const cancelWithRefund = async (conn, orderId, userId = null) => {
+  const [[order]] = await conn.query(
+    `SELECT id, user_id, charge, status FROM orders WHERE id = ? FOR UPDATE`,
+    [orderId],
+  );
+  if (!order) throw new Error('Orden no encontrada');
+  if (userId && order.user_id !== userId) throw new Error('Orden no encontrada');
+  if (!['pending', 'error'].includes(order.status)) {
+    throw new Error('La orden ya fue enviada al proveedor y no se puede cancelar');
+  }
+
   await conn.query(
     `UPDATE orders SET status = 'cancelled', updated_at = NOW() WHERE id = ?`,
     [orderId],
   );
+
+  const [[userRow]] = await conn.query('SELECT balance FROM users WHERE id = ? FOR UPDATE', [order.user_id]);
+  const balanceBefore = parseFloat(userRow.balance);
+  const refundAmount  = parseFloat(order.charge);
+
+  await conn.query('UPDATE users SET balance = balance + ? WHERE id = ?', [refundAmount, order.user_id]);
+
+  await conn.query(
+    `INSERT INTO transactions (user_id, order_id, type, amount, balance_before, balance_after, description, status)
+     VALUES (?, ?, 'credit', ?, ?, ?, ?, 'completed')`,
+    [order.user_id, orderId, refundAmount, balanceBefore, balanceBefore + refundAmount,
+     `Reembolso por cancelación de orden #${orderId}`],
+  );
+
+  return refundAmount;
 };
 
 const getAll = async ({ limit, offset, status, userId }) => {
@@ -132,3 +162,6 @@ module.exports = {
   updateProviderOrder, updateStatus, getPendingOrders,
   cancelWithRefund, getAll,
 };
+
+
+

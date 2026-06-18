@@ -16,7 +16,7 @@ const syncProvider = async (req, res, next) => {
     const provider = await providerModel.findById(req.params.id);
     if (!provider) return errorResponse(res, 'Proveedor no encontrado', 404);
 
-    const balanceData = await smm.getBalance();
+    const balanceData = await smm.getBalance(provider.api_url, provider.api_key);
     await providerModel.updateBalance(provider.id, parseFloat(balanceData.balance));
 
     return successResponse(res, { balance: balanceData.balance }, 'Balance sincronizado');
@@ -36,3 +36,6 @@ const createProvider = async (req, res, next) => {
 };
 
 module.exports = { getProviders, syncProvider, createProvider };
+
+
+

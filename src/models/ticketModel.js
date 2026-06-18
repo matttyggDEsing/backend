@@ -200,3 +200,6 @@ module.exports = {
   getAll,
   findAll: getAll,  // alias para compatibilidad con adminController
 };
+
+
+

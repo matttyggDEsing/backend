@@ -46,3 +46,6 @@ EXPOSE 5000
 # dumb-init maneja señales correctamente (para PM2 o node directo)
 ENTRYPOINT ["/usr/bin/dumb-init", "--"]
 CMD ["node", "server.js"]
+
+
+

@@ -95,6 +95,15 @@ router.post('/services/apply-markup', adminController.applyMarkup);
 router.get('/deposits',              adminController.getDeposits);
 router.post('/deposits/:id/approve', adminController.approveDeposit);
 router.post('/deposits/:id/reject',  adminController.rejectDeposit);
-router.get('/settings',   adminController.getSettings);
-router.patch('/settings', adminController.updateSettings);
+
+// NOTA: las rutas de /settings (incluye modo mantenimiento) viven en
+// src/routes/settings.js, montadas en server.js como '/api/admin/settings'.
+// Antes acá había un alias '/settings' que tapaba esas rutas por orden de
+// registro en Express y dejaba el sistema de la tabla `settings` como código
+// muerto — por eso el toggle de mantenimiento del panel nunca surtía efecto
+// donde correspondía. Se quitó para que quede una sola fuente de verdad.
+
 module.exports = router;
+
+
+
