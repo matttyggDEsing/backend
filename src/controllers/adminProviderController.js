@@ -198,7 +198,7 @@ const syncProvider = async (req, res, next) => {
       cancel:              Boolean(s.cancel),
     }));
 
-    const { synced } = await serviceModel.syncFromProvider(normalized);
+    const { synced } = await serviceModel.syncFromProvider(normalized, id);
 
     // Actualizar last_sync
     await pool.query(
@@ -255,3 +255,5 @@ module.exports = {
   syncProvider,
   getProviderBalance,
 };
+
+

@@ -240,7 +240,7 @@ const syncFromProvider = async (services, providerId) => {
 	 rate, provider_rate, min_order, max_order, type, refill, cancel, is_active)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`,
           [providerId, categoryId, providerServiceId, svcName, svcDesc,
-           rate, minOrd, maxOrd, svcType, svcRefill, svcCancel],
+           rate, rate, minOrd, maxOrd, svcType, svcRefill, svcCancel],
         );
       }
       synced++;
@@ -277,5 +277,7 @@ module.exports = {
   syncFromProvider,
   applyMarkup,
 };
+
+
 
 

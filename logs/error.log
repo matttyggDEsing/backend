@@ -323,3 +323,71 @@
     at Object.syncFromProvider (C:\Users\Maty\Desktop\nexapanel\backend\src\models\serviceModel.js:237:20)
     at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
     at async syncProvider (C:\Users\Maty\Desktop\nexapanel\backend\src\controllers\adminController.js:202:24)
+2026-06-18 01:11:01 [ERROR] [SMM] Error tras 3 intentos (https://peakerr.com/api/v2): Request failed with status code 401
+2026-06-18 01:11:01 [ERROR] AxiosError: Request failed with status code 401
+    at settle (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\axios\dist\node\axios.cjs:2049:12)
+    at IncomingMessage.handleStreamEnd (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\axios\dist\node\axios.cjs:3591:11)
+    at IncomingMessage.emit (node:events:521:24)
+    at endReadableNT (node:internal/streams/readable:1729:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)
+    at Axios.request (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\axios\dist\node\axios.cjs:4871:41)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async request (C:\Users\Maty\Desktop\nexapanel\backend\src\services\smmProvider.js:38:22)
+    at async Object.getServices (C:\Users\Maty\Desktop\nexapanel\backend\src\services\smmProvider.js:74:16)
+    at async syncProvider (C:\Users\Maty\Desktop\nexapanel\backend\src\controllers\adminController.js:227:25)
+2026-06-18 01:12:43 [ERROR] Error: Unknown column 'updated_at' in 'field list'
+    at updateProvider (C:\Users\Maty\Desktop\nexapanel\backend\src\controllers\adminController.js:174:16)
+    at Layer.handle [as handle_request] (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\route.js:149:13)
+    at C:\Users\Maty\Desktop\nexapanel\backend\src\middleware\validate.js:21:5
+    at Layer.handle [as handle_request] (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\index.js:284:15
+    at param (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\index.js:365:14)
+2026-06-18 01:12:44 [ERROR] Error: Unknown column 'updated_at' in 'field list'
+    at updateProvider (C:\Users\Maty\Desktop\nexapanel\backend\src\controllers\adminController.js:174:16)
+    at Layer.handle [as handle_request] (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\route.js:149:13)
+    at C:\Users\Maty\Desktop\nexapanel\backend\src\middleware\validate.js:21:5
+    at Layer.handle [as handle_request] (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\index.js:284:15
+    at param (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\index.js:365:14)
+2026-06-18 01:12:45 [ERROR] Error: Unknown column 'updated_at' in 'field list'
+    at updateProvider (C:\Users\Maty\Desktop\nexapanel\backend\src\controllers\adminController.js:174:16)
+    at Layer.handle [as handle_request] (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\route.js:149:13)
+    at C:\Users\Maty\Desktop\nexapanel\backend\src\middleware\validate.js:21:5
+    at Layer.handle [as handle_request] (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\index.js:284:15
+    at param (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\index.js:365:14)
+2026-06-18 01:15:10 [ERROR] Error: Cannot delete or update a parent row: a foreign key constraint fails (`nexapanel_db`.`orders`, CONSTRAINT `fk_orders_provider` FOREIGN KEY (`provider_id`) REFERENCES `providers` (`id`) ON DELETE RESTRICT)
+    at deleteProvider (C:\Users\Maty\Desktop\nexapanel\backend\src\controllers\adminController.js:182:16)
+    at Layer.handle [as handle_request] (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\index.js:284:15
+    at param (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\index.js:365:14)
+    at param (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\index.js:376:14)
+    at router.process_params (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\index.js:421:3)
+    at next (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\express\lib\router\index.js:280:10)
+2026-06-18 01:15:42 [ERROR] [SMM] Error tras 3 intentos (https://peakerr.com/api/v2): Request failed with status code 401
+2026-06-18 01:15:42 [ERROR] AxiosError: Request failed with status code 401
+    at settle (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\axios\dist\node\axios.cjs:2049:12)
+    at IncomingMessage.handleStreamEnd (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\axios\dist\node\axios.cjs:3591:11)
+    at IncomingMessage.emit (node:events:521:24)
+    at endReadableNT (node:internal/streams/readable:1729:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)
+    at Axios.request (C:\Users\Maty\Desktop\nexapanel\backend\node_modules\axios\dist\node\axios.cjs:4871:41)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async request (C:\Users\Maty\Desktop\nexapanel\backend\src\services\smmProvider.js:38:22)
+    at async Object.getServices (C:\Users\Maty\Desktop\nexapanel\backend\src\services\smmProvider.js:74:16)
+    at async syncProvider (C:\Users\Maty\Desktop\nexapanel\backend\src\controllers\adminController.js:227:25)

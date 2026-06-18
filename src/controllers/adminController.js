@@ -171,7 +171,7 @@ const updateProvider = async (req, res, next) => {
     if (api_key) { updates.push('api_key = ?'); values.push(api_key); }
     if (!updates.length) return errorResponse(res, 'No hay campos para actualizar', 400);
     values.push(req.params.id);
-    await pool.query(`UPDATE providers SET ${updates.join(', ')}, updated_at = NOW() WHERE id = ?`, values);
+    await pool.query(`UPDATE providers SET ${updates.join(', ')} WHERE id = ?`, values);
     return successResponse(res, null, 'Proveedor actualizado');
   } catch (err) { next(err); }
 };
@@ -184,13 +184,40 @@ const deleteProvider = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-// FIX: el botón "Sincronizar" del panel espera importar/actualizar el catálogo
-// de servicios de ese proveedor (usa `data.synced` en la respuesta), pero esta
-// función solo refrescaba el balance y nunca tocaba los servicios. Ahora trae
-// el catálogo real del proveedor (con sus propias credenciales) y lo sincroniza.
+// Keywords para filtros de calidad y país
+const QUALITY_KEYWORDS = ['premium', 'hq', 'high quality', 'real', 'organic', 'genuine', 'natural', 'non drop', 'nondrop', 'lifetime'];
+const USA_KEYWORDS     = ['usa', 'us ', 'united states', 'american', 'america'];
+
+function applyProviderFilters(services, filters = {}) {
+  const { categories = [], qualityOnly = false, usaOnly = false } = filters;
+  return services.filter(s => {
+    const name = (s.name || '').toLowerCase();
+    const cat  = (s.category || '').toLowerCase();
+
+    if (categories.length > 0) {
+      const matches = categories.some(c => cat === c.toLowerCase() || cat.includes(c.toLowerCase()));
+      if (!matches) return false;
+    }
+
+    if (qualityOnly) {
+      const hasQuality = QUALITY_KEYWORDS.some(k => name.includes(k));
+      if (!hasQuality) return false;
+    }
+
+    if (usaOnly) {
+      const hasUSA = USA_KEYWORDS.some(k => name.includes(k) || cat.includes(k));
+      if (!hasUSA) return false;
+    }
+
+    return true;
+  });
+}
+
 const syncProvider = async (req, res, next) => {
   try {
     const id = parseInt(req.params.id);
+    const filters = req.body?.filters ?? {};
+
     const provider = await providerModel.findById(id);
     if (!provider) return errorResponse(res, 'Proveedor no encontrado', 404);
 
@@ -199,15 +226,27 @@ const syncProvider = async (req, res, next) => {
       return errorResponse(res, 'El proveedor no devolvió servicios', 502);
     }
 
-    const { synced } = await serviceModel.syncFromProvider(rawServices, id);
+    const totalRaw = rawServices.length;
+    const filtered = applyProviderFilters(rawServices, filters);
+    const filteredOut = totalRaw - filtered.length;
+
+    if (filtered.length === 0) {
+      return errorResponse(res, `Los filtros activos descartaron los ${totalRaw} servicios del proveedor. Ajustá los filtros e intentá de nuevo.`, 422);
+    }
+
+    const { synced } = await serviceModel.syncFromProvider(filtered, id);
 
     await pool.query(
       `UPDATE providers SET last_sync = NOW(), status = 'active' WHERE id = ?`,
       [id],
     );
 
-    logger.info(`Admin ${req.user.id} synced provider #${id}: ${synced} services`);
-    return successResponse(res, { synced }, `${synced} servicios sincronizados`);
+    logger.info(`Admin ${req.user.id} synced provider #${id}: ${synced} synced, ${filteredOut} filtered out`);
+    return successResponse(
+      res,
+      { synced, filtered: filteredOut, total: totalRaw },
+      `${synced} servicios sincronizados${filteredOut > 0 ? ` (${filteredOut} descartados por filtros)` : ''}`,
+    );
   } catch (err) {
     await pool.query(`UPDATE providers SET status = 'error' WHERE id = ?`, [parseInt(req.params.id)]).catch(() => {});
     next(err);
@@ -412,5 +451,7 @@ module.exports = {
   getProviders, createProvider, updateProvider, deleteProvider, syncProvider, getProviderBalance,
   getAllServices, createService, updateService, deleteService, importServices, syncServices, getProviderCategories,
 };
+
+
 
 
