@@ -1,22 +1,26 @@
+'use strict';
+
 const { pool } = require('../config/db');
 
-const create = async (conn, data) => {
-  const [result] = await conn.query(
+/**
+ * Crea una orden. Acepta tanto una conexión de transacción (conn)
+ * como el pool directo.
+ */
+const create = async (conn, { user_id, service_id, provider_id, link, quantity, charge, cost }) => {
+  const db = conn || pool;
+  const [result] = await db.query(
     `INSERT INTO orders
        (user_id, service_id, provider_id, link, quantity, charge, cost, status)
      VALUES (?, ?, ?, ?, ?, ?, ?, 'pending')`,
-    [
-      data.user_id, data.service_id, data.provider_id,
-      data.link, data.quantity, data.charge, data.cost,
-    ],
+    [user_id, service_id, provider_id, link, quantity, charge, cost],
   );
   return result.insertId;
 };
 
 const findById = async (id) => {
   const [rows] = await pool.query(
-    `SELECT o.id, o.user_id, o.service_id, o.provider_id, o.provider_order_id,
-            o.link, o.quantity, o.start_count, o.remains,
+    `SELECT o.id, o.user_id, o.service_id, o.provider_id,
+            o.provider_order_id, o.link, o.quantity, o.start_count, o.remains,
             o.charge, o.cost, o.profit, o.status, o.notes,
             o.created_at, o.updated_at,
             s.name AS service_name
@@ -58,8 +62,8 @@ const getStatsByUser = async (userId) => {
     `SELECT
        COUNT(*) AS total,
        SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) AS completed,
-       SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) AS active,
-       SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) AS pending,
+       SUM(CASE WHEN status = 'active'    THEN 1 ELSE 0 END) AS active,
+       SUM(CASE WHEN status = 'pending'   THEN 1 ELSE 0 END) AS pending,
        SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END) AS cancelled,
        SUM(charge) AS total_spent
      FROM orders WHERE user_id = ?`,
@@ -76,12 +80,35 @@ const updateProviderOrder = async (id, providerOrderId) => {
   );
 };
 
-const updateStatus = async (id, status, { startCount, remains, profit } = {}) => {
+/**
+ * FIX: `profit` es una columna GENERATED ALWAYS AS (charge - cost) STORED en el schema.
+ * MySQL no permite escribir directamente en columnas generadas — intentarlo lanza
+ * "Error Code: 3105. The value specified for generated column 'profit' in table 'orders'
+ * is not allowed."
+ *
+ * Antes se construía el SET dinámicamente e incluía `profit = ?` cuando se pasaba
+ * el campo, lo que hacía crashear silenciosamente el orderProcessor en cada ciclo
+ * de polling para órdenes completadas.
+ *
+ * Ahora `profit` se omite del UPDATE siempre — MySQL lo recalcula solo al actualizar
+ * `charge` o `cost`, que son las columnas fuente. Si necesitás forzar un recálculo,
+ * hacé un UPDATE de cost o charge y profit se actualiza automáticamente.
+ */
+const updateStatus = async (id, status, { startCount, remains } = {}) => {
   const fields = ['status = ?', 'updated_at = NOW()'];
   const values = [status];
-  if (startCount !== undefined) { fields.push('start_count = ?'); values.push(startCount); }
-  if (remains !== undefined) { fields.push('remains = ?'); values.push(remains); }
-  if (profit !== undefined) { fields.push('profit = ?'); values.push(profit); }
+
+  if (startCount !== undefined) {
+    fields.push('start_count = ?');
+    values.push(startCount);
+  }
+  if (remains !== undefined) {
+    fields.push('remains = ?');
+    values.push(remains);
+  }
+
+  // NOTA: `profit` NO se incluye — es columna generada, MySQL la calcula sola.
+
   values.push(id);
   await pool.query(`UPDATE orders SET ${fields.join(', ')} WHERE id = ?`, values);
 };
@@ -96,11 +123,10 @@ const getPendingOrders = async () => {
   return rows;
 };
 
-// FIX: esta función se llamaba "cancelWithRefund" pero nunca devolvía nada al
-// usuario — solo cambiaba el status. Tampoco validaba dueño ni estado de la
-// orden (podías "cancelar" una orden ya completada). Ahora sí reembolsa el
-// `charge` real, valida que la orden sea del usuario y que esté en un estado
-// seguro para cancelar (todavía no se envió al proveedor o falló el envío).
+/**
+ * Cancela una orden con reembolso al usuario.
+ * Solo se puede cancelar si todavía no fue enviada al proveedor (status pending/error).
+ */
 const cancelWithRefund = async (conn, orderId, userId = null) => {
   const [[order]] = await conn.query(
     `SELECT id, user_id, charge, status FROM orders WHERE id = ? FOR UPDATE`,
@@ -117,17 +143,27 @@ const cancelWithRefund = async (conn, orderId, userId = null) => {
     [orderId],
   );
 
-  const [[userRow]] = await conn.query('SELECT balance FROM users WHERE id = ? FOR UPDATE', [order.user_id]);
+  const [[userRow]] = await conn.query(
+    'SELECT balance FROM users WHERE id = ? FOR UPDATE',
+    [order.user_id],
+  );
   const balanceBefore = parseFloat(userRow.balance);
   const refundAmount  = parseFloat(order.charge);
 
-  await conn.query('UPDATE users SET balance = balance + ? WHERE id = ?', [refundAmount, order.user_id]);
+  await conn.query(
+    'UPDATE users SET balance = balance + ? WHERE id = ?',
+    [refundAmount, order.user_id],
+  );
 
   await conn.query(
-    `INSERT INTO transactions (user_id, order_id, type, amount, balance_before, balance_after, description, status)
+    `INSERT INTO transactions
+       (user_id, order_id, type, amount, balance_before, balance_after, description, status)
      VALUES (?, ?, 'credit', ?, ?, ?, ?, 'completed')`,
-    [order.user_id, orderId, refundAmount, balanceBefore, balanceBefore + refundAmount,
-     `Reembolso por cancelación de orden #${orderId}`],
+    [
+      order.user_id, orderId, refundAmount,
+      balanceBefore, balanceBefore + refundAmount,
+      `Reembolso por cancelación de orden #${orderId}`,
+    ],
   );
 
   return refundAmount;
@@ -158,13 +194,13 @@ const getAll = async ({ limit, offset, status, userId }) => {
 };
 
 module.exports = {
-  create, findById, findByUser, getStatsByUser,
-  updateProviderOrder, updateStatus, getPendingOrders,
-  cancelWithRefund, getAll,
+  create,
+  findById,
+  findByUser,
+  getStatsByUser,
+  updateProviderOrder,
+  updateStatus,
+  getPendingOrders,
+  cancelWithRefund,
+  getAll,
 };
-
-
-
-
-
-

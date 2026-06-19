@@ -4,17 +4,22 @@ const { pool } = require('../config/db');
 
 /**
  * Crea un ticket de soporte.
+ * FIX: ahora acepta orderId y lo persiste en la columna order_id.
+ * Antes orderId se pasaba desde el controller pero era ignorado en la
+ * desestructuración, por lo que siempre quedaba NULL aunque el usuario
+ * hubiera asociado una orden al ticket.
+ *
  * @returns {number} ID del nuevo ticket
  */
-const create = async (userId, { subject, message, priority = 'medium' }) => {
+const create = async (userId, { subject, message, priority = 'medium', orderId = null }) => {
   const conn = await pool.getConnection();
   try {
     await conn.beginTransaction();
 
     const [ticketResult] = await conn.query(
-      `INSERT INTO tickets (user_id, subject, status, priority)
-       VALUES (?, ?, 'open', ?)`,
-      [userId, subject, priority],
+      `INSERT INTO tickets (user_id, order_id, subject, status, priority)
+       VALUES (?, ?, ?, 'open', ?)`,
+      [userId, orderId || null, subject, priority],
     );
     const ticketId = ticketResult.insertId;
 
@@ -100,8 +105,6 @@ const getMessages = async (ticketId) => {
 
 /**
  * Agrega un mensaje a un ticket y actualiza updated_at.
- * Staff responde → status 'pending' (esperando al usuario)
- * Usuario responde → status 'open'
  */
 const addMessage = async (ticketId, userId, message, isStaff = false) => {
   const conn = await pool.getConnection();
@@ -114,7 +117,6 @@ const addMessage = async (ticketId, userId, message, isStaff = false) => {
       [ticketId, userId, message, isStaff ? 1 : 0],
     );
 
-    // staff responde → pending; usuario responde → open
     const newStatus = isStaff ? 'pending' : 'open';
     await conn.query(
       `UPDATE tickets SET status = ?, updated_at = NOW()
@@ -157,7 +159,6 @@ const closeAdmin = async (ticketId) => {
 
 /**
  * [Admin] Lista todos los tickets con filtros opcionales.
- * Exportado como getAll (usado por adminController) y findAll (alias).
  */
 const getAll = async ({ status, limit = 30, offset = 0 } = {}) => {
   let where = '';
@@ -198,11 +199,5 @@ module.exports = {
   close,
   closeAdmin,
   getAll,
-  findAll: getAll,  // alias para compatibilidad con adminController
+  findAll: getAll,
 };
-
-
-
-
-
-

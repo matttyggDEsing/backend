@@ -23,12 +23,10 @@ router.get('/',              ticketController.getTickets);
 router.post('/',             validate(createTicketSchema), ticketController.createTicket);
 router.get('/:id',           ticketController.getTicketById);
 router.post('/:id/reply',    validate(replySchema), ticketController.replyToTicket);
+
+// FIX: el frontend llama POST /:id/close pero la ruta original era PATCH.
+// Registramos ambos métodos para no tener que cambiar el frontend.
+router.post('/:id/close',    ticketController.closeTicket);
 router.patch('/:id/close',   ticketController.closeTicket);
 
 module.exports = router;
-
-
-
-
-
-

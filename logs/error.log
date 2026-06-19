@@ -399,3 +399,11 @@
 2026-06-18 23:37:10 [ERROR] Provider order failed for order #3: Proveedor SMM: Quantity less than minimal 5
 2026-06-18 23:39:10 [ERROR] [SMM] Error tras 1 intento(s) (https://peakerr.com/api/v2): Proveedor SMM: Quantity less than minimal 5
 2026-06-18 23:39:10 [ERROR] Provider order failed for order #4: Proveedor SMM: Quantity less than minimal 5
+2026-06-18 23:48:51 [ERROR] [SMM] Error tras 1 intento(s) (https://peakerr.com/api/v2): Proveedor SMM: Quantity less than minimal 5
+2026-06-18 23:48:51 [ERROR] Provider order failed for order #5: Proveedor SMM: Quantity less than minimal 5
+2026-06-19 00:34:17 [ERROR] [Mailer] Error enviando email: Invalid login: 535-5.7.8 Username and Password not accepted. For more information, go to
+535 5.7.8  https://support.google.com/mail/?p=BadCredentials 6a1803df08f44-8de61d379d0sm10394006d6.32 - gsmtp
+2026-06-19 00:36:10 [ERROR] [SMM] Error tras 1 intento(s) (https://peakerr.com/api/v2): Proveedor SMM: Not enough funds on balance
+2026-06-19 00:36:10 [ERROR] [Orders] Provider order failed for order #7: Proveedor SMM: Not enough funds on balance
+2026-06-19 00:37:21 [ERROR] [SMM] Error tras 1 intento(s) (https://smmkings.com/api/v2): Proveedor SMM: Not enough funds on balance
+2026-06-19 00:37:21 [ERROR] [Orders] Provider order failed for order #8: Proveedor SMM: Not enough funds on balance

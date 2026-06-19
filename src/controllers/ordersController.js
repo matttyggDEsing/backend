@@ -1,14 +1,13 @@
 'use strict';
 
-const { pool }           = require('../config/db');
-const orderModel         = require('../models/orderModel');
-const serviceModel       = require('../models/serviceModel');
-const providerModel      = require('../models/providerModel');
-const transactionModel   = require('../models/transactionModel');
-const smm                = require('../services/smmProvider');
+const { pool }         = require('../config/db');
+const orderModel       = require('../models/orderModel');
+const serviceModel     = require('../models/serviceModel');
+const providerModel    = require('../models/providerModel');
+const smm              = require('../services/smmProvider');
 const { successResponse, errorResponse, paginatedResponse } = require('../utils/response');
-const { paginate }       = require('../utils/pagination');
-const logger             = require('../utils/logger');
+const { paginate }     = require('../utils/pagination');
+const logger           = require('../utils/logger');
 
 const getOrders = async (req, res, next) => {
   try {
@@ -36,28 +35,25 @@ const getOrderStats = async (req, res, next) => {
 
 const getOrderChart = async (req, res, next) => {
   try {
-    const range = req.query.range || '7d';
-    const days = range === '30d' ? 30 : range === '90d' ? 90 : 7;
-
+    const days = Math.min(90, Math.max(7, parseInt(req.query.days) || 30));
     const [rows] = await pool.query(
-      `SELECT
-         DATE(created_at)            AS date,
-         COUNT(*)                    AS orders,
-         COALESCE(SUM(charge), 0)    AS revenue
+      `SELECT DATE(created_at) AS date,
+              COUNT(*)         AS orders,
+              SUM(charge)      AS revenue
        FROM orders
        WHERE user_id = ?
-         AND created_at >= DATE_SUB(CURDATE(), INTERVAL ? DAY)
+         AND created_at >= DATE_SUB(NOW(), INTERVAL ? DAY)
        GROUP BY DATE(created_at)
        ORDER BY date ASC`,
-      [req.user.id, days]
+      [req.user.id, days],
     );
 
     const result = [];
     for (let i = days - 1; i >= 0; i--) {
-      const d = new Date();
+      const d    = new Date();
       d.setDate(d.getDate() - i);
       const dateStr = d.toISOString().slice(0, 10);
-      const found = rows.find((r) => r.date?.toISOString?.().slice(0, 10) === dateStr || r.date === dateStr);
+      const found   = rows.find((r) => r.date?.toISOString?.().slice(0, 10) === dateStr || r.date === dateStr);
       result.push({
         date:    dateStr,
         orders:  found ? Number(found.orders)  : 0,
@@ -90,9 +86,7 @@ const createOrder = async (req, res, next) => {
       return errorResponse(res, 'Este servicio requiere que ingreses los comentarios', 400);
     }
 
-    // FIX DEFINITIVO: actualizar min/max de la DB con los valores reales del proveedor
-    // ANTES de validar, para que siempre estén sincronizados.
-    // Se hace aquí una sola vez por orden, con timeout corto para no demorar si el proveedor tarda.
+    // Sincronizar límites min/max con el proveedor antes de validar
     try {
       const provider = await providerModel.findById(service.provider_id);
       if (provider) {
@@ -109,18 +103,18 @@ const createOrder = async (req, res, next) => {
           if (ps) {
             const provMin = parseInt(ps.min, 10);
             const provMax = parseInt(ps.max, 10);
-            // Actualizar DB si hay diferencia
             if (
               (!isNaN(provMin) && provMin !== service.min_order) ||
               (!isNaN(provMax) && provMax !== service.max_order)
             ) {
               await pool.query(
                 'UPDATE services SET min_order = ?, max_order = ?, updated_at = NOW() WHERE id = ?',
-                [isNaN(provMin) ? service.min_order : provMin,
-                 isNaN(provMax) ? service.max_order : provMax,
-                 service.id],
+                [
+                  isNaN(provMin) ? service.min_order : provMin,
+                  isNaN(provMax) ? service.max_order : provMax,
+                  service.id,
+                ],
               );
-              // Actualizar objeto en memoria para que la validación de abajo use los valores frescos
               if (!isNaN(provMin)) service.min_order = provMin;
               if (!isNaN(provMax)) service.max_order = provMax;
               logger.info(`[Orders] Servicio #${service.id} actualizado: min=${service.min_order}, max=${service.max_order}`);
@@ -133,7 +127,7 @@ const createOrder = async (req, res, next) => {
       logger.warn(`[Orders] No se pudo sincronizar límites del servicio #${service.id}: ${syncErr.message}`);
     }
 
-    // Validar cantidad contra los límites ya actualizados
+    // Validar cantidad contra los límites actualizados
     if (quantity < service.min_order || quantity > service.max_order) {
       conn.release();
       return errorResponse(
@@ -144,7 +138,15 @@ const createOrder = async (req, res, next) => {
     }
 
     const charge = parseFloat(((service.rate / 1000) * quantity).toFixed(4));
-    const providerRate = parseFloat(service.provider_rate || service.rate);
+
+    // FIX: provider_rate puede no existir si la migración migration_provider_rate.sql
+    // no fue ejecutada todavía. En ese caso caemos a rate (precio usuario) como costo,
+    // lo cual es incorrecto para el margen pero no bloquea la orden.
+    // Si provider_rate es 0 (valor por defecto de la columna) también usamos rate.
+    const rawProviderRate = parseFloat(service.provider_rate);
+    const providerRate    = (!isNaN(rawProviderRate) && rawProviderRate > 0)
+      ? rawProviderRate
+      : parseFloat(service.rate);
     const cost = parseFloat(((providerRate / 1000) * quantity).toFixed(4));
 
     await conn.beginTransaction();
@@ -197,22 +199,29 @@ const createOrder = async (req, res, next) => {
     await conn.commit();
     conn.release();
 
+    // Enviar la orden al proveedor en segundo plano
     setImmediate(async () => {
       try {
         const provider = await providerModel.findById(service.provider_id);
+
+        // FIX PRINCIPAL: se pasan apiUrl y apiKey separados del resto de los params.
+        // smmProvider.addOrder({ apiUrl, apiKey, ...orderParams }) hace spread de todo
+        // lo demás, así que comments, runs, interval, etc. llegan intactos al proveedor.
         const orderParams = {
           service:  service.provider_service_id,
           link,
           quantity,
-          apiUrl: provider?.api_url,
-          apiKey: provider?.api_key,
+          apiUrl:   provider?.api_url,
+          apiKey:   provider?.api_key,
         };
-        // Pasar comentarios al proveedor si aplica
+
         if (isCommentService && comments) {
           orderParams.comments = comments.toString().trim();
         }
+
         const providerResponse = await smm.addOrder(orderParams);
-        const providerOrderId = providerResponse?.order?.toString() ?? null;
+        const providerOrderId  = providerResponse?.order?.toString() ?? null;
+
         if (providerOrderId) {
           await pool.query(
             `UPDATE orders SET provider_order_id = ?, status = 'active' WHERE id = ?`,
@@ -220,11 +229,12 @@ const createOrder = async (req, res, next) => {
           );
         }
       } catch (provErr) {
-        logger.error(`Provider order failed for order #${orderId}: ${provErr.message}`);
+        logger.error(`[Orders] Provider order failed for order #${orderId}: ${provErr.message}`);
 
+        // Reembolso automático si el proveedor rechaza la orden
         try {
           await pool.query(
-            `UPDATE users SET balance = balance + ? WHERE id = ?`,
+            'UPDATE users SET balance = balance + ? WHERE id = ?',
             [charge, userId],
           );
           await pool.query(
@@ -254,9 +264,7 @@ const createOrder = async (req, res, next) => {
     return successResponse(res, order, 'Orden creada exitosamente', 201);
 
   } catch (err) {
-    try {
-      await conn.rollback();
-    } catch (_) {}
+    try { await conn.rollback(); } catch (_) {}
     conn.release();
     next(err);
   }

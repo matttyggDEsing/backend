@@ -1,20 +1,11 @@
+'use strict';
+
 const axios = require('axios');
 const { redis } = require('../config/redis');
 const logger = require('../utils/logger');
 const env = require('../config/env');
 
 const CACHE_TTL = 30 * 60; // 30 minutos
-
-// FIX: el panel soporta múltiples proveedores SMM (tabla `providers`, cada uno
-// con su propio api_url/api_key), pero antes este módulo siempre pegaba contra
-// las credenciales globales de .env (SMM_PROVIDER_URL/SMM_PROVIDER_KEY) sin
-// importar qué proveedor se le pasara. Resultado: sync, balance, creación de
-// orden y polling de estado terminaban hablando con un único proveedor "fantasma"
-// para TODOS los proveedores configurados.
-//
-// Ahora cada función acepta opcionalmente { apiUrl, apiKey } del proveedor en
-// cuestión. Si no se pasan, cae al proveedor global de .env (compatibilidad
-// hacia atrás con instalaciones de un solo proveedor).
 
 const resolveCreds = (apiUrl, apiKey) => ({
   url: apiUrl || env.SMM_PROVIDER_URL,
@@ -41,8 +32,6 @@ const request = async (params, { apiUrl, apiKey, attempt = 1 } = {}) => {
     });
 
     if (response.data?.error) {
-      // Error de la API del proveedor (respuesta 200 pero con campo error).
-      // Son errores determinísticos — reintentar nunca los va a resolver.
       const err = new Error(`Proveedor SMM: ${response.data.error}`);
       err.isProviderApiError = true;
       throw err;
@@ -50,9 +39,6 @@ const request = async (params, { apiUrl, apiKey, attempt = 1 } = {}) => {
 
     return response.data;
   } catch (err) {
-    // No reintentar si es un error de la API del proveedor (e.g. "Quantity less
-    // than minimal", "Incorrect order ID", etc.) — son determinísticos.
-    // Solo reintentar en errores de red, timeout, 5xx, etc.
     if (!err.isProviderApiError && attempt < MAX_ATTEMPTS) {
       const delay = Math.pow(2, attempt) * 500;
       logger.warn(`[SMM] Intento ${attempt} fallido (${url}). Reintentando en ${delay}ms...`);
@@ -66,8 +52,6 @@ const request = async (params, { apiUrl, apiKey, attempt = 1 } = {}) => {
 
 /**
  * Obtener lista de servicios del proveedor (con cache Redis 30min).
- * Cache por proveedor: antes usaba una sola key global, así que sincronizar
- * el proveedor B podía devolver el catálogo cacheado del proveedor A.
  */
 const getServices = async (apiUrl, apiKey) => {
   const { url } = resolveCreds(apiUrl, apiKey);
@@ -89,7 +73,6 @@ const getServices = async (apiUrl, apiKey) => {
 
 /**
  * Invalidar cache de servicios de un proveedor.
- * Útil para forzar una re-lectura de límites actualizados.
  */
 const invalidateServicesCache = async (apiUrl) => {
   const { url } = resolveCreds(apiUrl);
@@ -103,10 +86,20 @@ const invalidateServicesCache = async (apiUrl) => {
 };
 
 /**
- * Crear una orden en el proveedor.
+ * FIX PRINCIPAL: Crear una orden en el proveedor.
+ *
+ * Antes: desestructuraba { service, link, quantity, apiUrl, apiKey } y
+ * solo pasaba esos 3 campos al proveedor — cualquier campo extra
+ * (comments, runs, interval, usernames, hashtags, username, media,
+ * min, max, posts, delay, expiry, answer_number, etc.) se descartaba
+ * silenciosamente y el proveedor rechazaba la orden.
+ *
+ * Ahora: separa solo las credenciales (apiUrl, apiKey) y pasa el resto
+ * de los parámetros intactos al proveedor mediante spread.
  */
-const addOrder = async ({ service, link, quantity, apiUrl, apiKey }) => {
-  return request({ action: 'add', service, link, quantity }, { apiUrl, apiKey });
+const addOrder = async ({ apiUrl, apiKey, ...orderParams }) => {
+  logger.info(`[SMM] Enviando orden al proveedor: service=${orderParams.service}, link=${orderParams.link}, qty=${orderParams.quantity}`);
+  return request({ action: 'add', ...orderParams }, { apiUrl, apiKey });
 };
 
 /**
@@ -137,4 +130,12 @@ const refillOrder = async (orderId, apiUrl, apiKey) => {
   return request({ action: 'refill', order: orderId }, { apiUrl, apiKey });
 };
 
-module.exports = { getServices, invalidateServicesCache, addOrder, getStatus, getMultipleStatus, getBalance, refillOrder };
+module.exports = {
+  getServices,
+  invalidateServicesCache,
+  addOrder,
+  getStatus,
+  getMultipleStatus,
+  getBalance,
+  refillOrder,
+};

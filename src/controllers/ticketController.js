@@ -10,7 +10,6 @@ const { paginate } = require('../utils/pagination');
 
 /**
  * GET /api/tickets
- * Lista los tickets del usuario autenticado.
  */
 const getTickets = async (req, res, next) => {
   try {
@@ -28,13 +27,11 @@ const getTickets = async (req, res, next) => {
 
 /**
  * GET /api/tickets/:id
- * Detalle de un ticket con sus mensajes.
  */
 const getTicketById = async (req, res, next) => {
   try {
     const ticket = await ticketModel.findByIdAndUser(req.params.id, req.user.id);
     if (!ticket) return errorResponse(res, 'Ticket no encontrado', 404);
-
     const messages = await ticketModel.getMessages(ticket.id);
     return successResponse(res, { ...ticket, messages });
   } catch (err) {
@@ -44,7 +41,6 @@ const getTicketById = async (req, res, next) => {
 
 /**
  * POST /api/tickets
- * Crea un nuevo ticket.
  * Body: { subject, message, priority?, order_id? }
  */
 const createTicket = async (req, res, next) => {
@@ -59,18 +55,19 @@ const createTicket = async (req, res, next) => {
       return errorResponse(res, 'Prioridad inválida. Usa: low, medium, high, urgent', 400);
     }
 
+    // FIX: se pasa orderId al modelo (antes se ignoraba)
     const ticketId = await ticketModel.create(req.user.id, {
-      subject: subject.trim(),
-      message: message.trim(),
+      subject:  subject.trim(),
+      message:  message.trim(),
       priority,
-      orderId: order_id || null,
+      orderId:  order_id || null,
     });
 
     const messages = await ticketModel.getMessages(ticketId);
 
     return successResponse(
       res,
-      { id: ticketId, subject, status: 'open', priority, messages },
+      { id: ticketId, subject: subject.trim(), status: 'open', priority, messages },
       'Ticket creado exitosamente',
       201,
     );
@@ -81,8 +78,6 @@ const createTicket = async (req, res, next) => {
 
 /**
  * POST /api/tickets/:id/reply
- * El usuario responde a su ticket.
- * Body: { message }
  */
 const replyToTicket = async (req, res, next) => {
   try {
@@ -105,8 +100,10 @@ const replyToTicket = async (req, res, next) => {
 };
 
 /**
- * PATCH /api/tickets/:id/close
- * El usuario cierra su ticket.
+ * FIX: el frontend llama POST /tickets/:id/close pero la ruta original era PATCH.
+ * Ahora el router registra AMBOS métodos (POST y PATCH) apuntando a este handler,
+ * así funciona tanto desde el frontend existente como desde integraciones que usen PATCH.
+ * Ver tickets.js para el registro doble de ruta.
  */
 const closeTicket = async (req, res, next) => {
   try {
@@ -122,29 +119,24 @@ const closeTicket = async (req, res, next) => {
 // Rutas de admin
 // ──────────────────────────────────────────────
 
-/**
- * GET /api/admin/tickets
- * Lista todos los tickets (con filtro opcional de status).
- */
 const adminListTickets = async (req, res, next) => {
   try {
     const { status, limit = 30, offset = 0 } = req.query;
-    const { rows, total } = await ticketModel.findAll({ status, limit: parseInt(limit), offset: parseInt(offset) });
+    const { rows, total } = await ticketModel.findAll({
+      status,
+      limit: parseInt(limit),
+      offset: parseInt(offset),
+    });
     return successResponse(res, { tickets: rows, total });
   } catch (err) {
     next(err);
   }
 };
 
-/**
- * GET /api/admin/tickets/:id
- * Detalle completo de cualquier ticket.
- */
 const adminGetTicket = async (req, res, next) => {
   try {
     const ticket = await ticketModel.findById(req.params.id);
     if (!ticket) return errorResponse(res, 'Ticket no encontrado', 404);
-
     const messages = await ticketModel.getMessages(ticket.id);
     return successResponse(res, { ...ticket, messages });
   } catch (err) {
@@ -152,11 +144,6 @@ const adminGetTicket = async (req, res, next) => {
   }
 };
 
-/**
- * POST /api/admin/tickets/:id/reply
- * El staff/admin responde un ticket.
- * Body: { message }
- */
 const adminReplyToTicket = async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -171,16 +158,12 @@ const adminReplyToTicket = async (req, res, next) => {
     await ticketModel.addMessage(id, req.user.id, message.trim(), true);
     const messages = await ticketModel.getMessages(id);
 
-    return successResponse(res, { ticket: { ...ticket, status: 'answered' }, messages });
+    return successResponse(res, { ticket: { ...ticket, status: 'pending' }, messages });
   } catch (err) {
     next(err);
   }
 };
 
-/**
- * PATCH /api/admin/tickets/:id/close
- * El admin cierra cualquier ticket.
- */
 const adminCloseTicket = async (req, res, next) => {
   try {
     const closed = await ticketModel.closeAdmin(req.params.id);
@@ -191,20 +174,29 @@ const adminCloseTicket = async (req, res, next) => {
   }
 };
 
+// Alias requeridos por adminController.js
+const adminGetTicketMessages = async (req, res, next) => {
+  try {
+    const messages = await ticketModel.getMessages(req.params.id);
+    return successResponse(res, messages);
+  } catch (err) {
+    next(err);
+  }
+};
+const adminReplyTicket = adminReplyToTicket;
+
 module.exports = {
+  // Usuario
   getTickets,
   getTicketById,
   createTicket,
   replyToTicket,
   closeTicket,
+  // Admin
   adminListTickets,
   adminGetTicket,
+  adminGetTicketMessages,
+  adminReplyTicket,
   adminReplyToTicket,
   adminCloseTicket,
 };
-
-
-
-
-
-
