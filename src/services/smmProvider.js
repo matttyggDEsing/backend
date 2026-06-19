@@ -41,18 +41,25 @@ const request = async (params, { apiUrl, apiKey, attempt = 1 } = {}) => {
     });
 
     if (response.data?.error) {
-      throw new Error(`Proveedor SMM: ${response.data.error}`);
+      // Error de la API del proveedor (respuesta 200 pero con campo error).
+      // Son errores determinísticos — reintentar nunca los va a resolver.
+      const err = new Error(`Proveedor SMM: ${response.data.error}`);
+      err.isProviderApiError = true;
+      throw err;
     }
 
     return response.data;
   } catch (err) {
-    if (attempt < MAX_ATTEMPTS) {
+    // No reintentar si es un error de la API del proveedor (e.g. "Quantity less
+    // than minimal", "Incorrect order ID", etc.) — son determinísticos.
+    // Solo reintentar en errores de red, timeout, 5xx, etc.
+    if (!err.isProviderApiError && attempt < MAX_ATTEMPTS) {
       const delay = Math.pow(2, attempt) * 500;
       logger.warn(`[SMM] Intento ${attempt} fallido (${url}). Reintentando en ${delay}ms...`);
       await new Promise((r) => setTimeout(r, delay));
       return request(params, { apiUrl, apiKey, attempt: attempt + 1 });
     }
-    logger.error(`[SMM] Error tras ${MAX_ATTEMPTS} intentos (${url}): ${err.message}`);
+    logger.error(`[SMM] Error tras ${attempt} intento(s) (${url}): ${err.message}`);
     throw err;
   }
 };

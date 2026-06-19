@@ -174,9 +174,33 @@ const createOrder = async (req, res, next) => {
         }
       } catch (provErr) {
         logger.error(`Provider order failed for order #${orderId}: ${provErr.message}`);
+
+        // Reembolsar al usuario — el proveedor rechazó la orden, el usuario
+        // no debe perder el saldo.
+        try {
+          await pool.query(
+            `UPDATE users SET balance = balance + ? WHERE id = ?`,
+            [charge, userId],
+          );
+          await pool.query(
+            `INSERT INTO transactions
+               (user_id, order_id, type, amount, balance_before, balance_after, description, status)
+             VALUES (?, ?, 'credit', ?, ?, ?, ?, 'completed')`,
+            [
+              userId, orderId, charge,
+              balanceBefore - charge,   // balance después del débito original
+              balanceBefore,            // queda igual que antes de la orden
+              `Reembolso automático — Orden #${orderId} rechazada por el proveedor`,
+            ],
+          );
+          logger.info(`[Orders] Reembolso de $${charge} aplicado al usuario #${userId} (orden #${orderId})`);
+        } catch (refundErr) {
+          logger.error(`[Orders] CRÍTICO: no se pudo reembolsar orden #${orderId}: ${refundErr.message}`);
+        }
+
         await pool.query(
           `UPDATE orders SET status = 'error', notes = ? WHERE id = ?`,
-          [provErr.message?.slice(0, 500), orderId],
+          [`Rechazada por el proveedor: ${provErr.message?.slice(0, 480)}`, orderId],
         );
       }
     });

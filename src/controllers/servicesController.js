@@ -11,7 +11,7 @@ const { paginatedResponse, errorResponse } = require('../utils/response');
  */
 const getServices = async (req, res, next) => {
   try {
-    const { category, page = 1, perPage = 50 } = req.query;
+    const { category, search, page = 1, perPage = 50 } = req.query;
     const limit  = Math.min(100, Math.max(1, parseInt(perPage) || 50));
     const offset = (Math.max(1, parseInt(page) || 1) - 1) * limit;
 
@@ -22,7 +22,12 @@ const getServices = async (req, res, next) => {
       if (cat) categoryId = cat.id;
     }
 
-    const { rows, total } = await serviceModel.getActive({ categoryId, limit, offset });
+    const { rows, total } = await serviceModel.getActive({
+      categoryId,
+      search: search?.trim() || null,
+      limit,
+      offset,
+    });
     const totalPages = Math.ceil(total / limit);
 
     return paginatedResponse(res, rows, {

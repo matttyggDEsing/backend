@@ -6,13 +6,19 @@ const { pool } = require('../config/db');
  * Retorna servicios activos con paginación.
  * FIX: agregado LIMIT/OFFSET + COUNT para no traer toda la tabla de una.
  */
-const getActive = async ({ categoryId, limit = 50, offset = 0 } = {}) => {
+const getActive = async ({ categoryId, search, limit = 50, offset = 0 } = {}) => {
   const params = [];
   let where = 'WHERE s.is_active = 1';
 
   if (categoryId) {
     where += ' AND s.category_id = ?';
     params.push(categoryId);
+  }
+
+  if (search) {
+    // busca por nombre o por ID numérico exacto
+    where += ' AND (s.name LIKE ? OR s.provider_service_id = ?)';
+    params.push(`%${search}%`, parseInt(search) || 0);
   }
 
   const countSql = `
@@ -33,7 +39,10 @@ const getActive = async ({ categoryId, limit = 50, offset = 0 } = {}) => {
     LIMIT ? OFFSET ?
   `;
 
-  const [[{ total }], [rows]] = await Promise.all([
+  // FIX: pool.query() devuelve [rows, fields], por eso Promise.all resuelve en
+  // [ [[{total:N}], fields], [[row,...], fields] ].
+  // El patrón correcto necesita un nivel extra de brackets para el count.
+  const [[[{ total }]], [rows]] = await Promise.all([
     pool.query(countSql, params),
     pool.query(dataSql, [...params, parseInt(limit), parseInt(offset)]),
   ]);
