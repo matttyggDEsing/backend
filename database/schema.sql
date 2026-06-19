@@ -1,7 +1,26 @@
 -- ============================================================
--- NexaPanel — schema.sql
+-- NexaPanel — schema.sql  (FUENTE ÚNICA DE VERDAD)
 -- MySQL 8.x  |  Charset: utf8mb4  |  Collation: utf8mb4_unicode_ci
--- Ejecutar con: mysql -u root -p nexapanel_db < schema.sql
+-- Ejecutar con: npm run db:migrate  (database/migrate.js)
+--
+-- Este archivo reemplaza a los dos schema.sql que convivían en el
+-- proyecto (database/schema.sql y src/db/schema.sql), que estaban
+-- desincronizados entre sí y ambos incompletos respecto al código
+-- real. Se consolidó así:
+--   • Base: src/db/schema.sql ("versión corregida": role 'staff',
+--     tickets.order_id, ticket_messages.is_staff, wallets,
+--     wallet_transactions, deposit_requests)
+--   • + columna `services.provider_rate` (usada por serviceModel.js,
+--     ordersController.js, apiController.js — antes solo vivía en
+--     database/migration_provider_rate.sql, nunca aplicada acá)
+--   • + columna `providers.updated_at` (antes solo en
+--     database/add_updated_at_providers.sql)
+--   • + tabla `settings` con sus valores iniciales (antes solo en
+--     database/add_settings_table.sql / en el otro schema.sql)
+--   • NO incluye `services.cost_rate` ni la tabla `markup_config` de
+--     database/add_markup.sql: ese sistema de markup quedó abandonado,
+--     el código usa `provider_rate` + el endpoint apply-markup, así
+--     que esas columnas no se usan en ningún lado.
 -- ============================================================
 
 SET NAMES utf8mb4;
@@ -16,7 +35,7 @@ CREATE TABLE IF NOT EXISTS `users` (
   `name`           VARCHAR(100)     NOT NULL,
   `email`          VARCHAR(255)     NOT NULL,
   `password`       VARCHAR(255)     NOT NULL COMMENT 'bcrypt hash',
-  `role`           ENUM('user','admin') NOT NULL DEFAULT 'user',
+  `role`           ENUM('user','staff','admin') NOT NULL DEFAULT 'user',
   `balance`        DECIMAL(12,4)    NOT NULL DEFAULT 0.0000,
   `api_key`        VARCHAR(64)      NOT NULL,
   `status`         ENUM('active','banned','pending') NOT NULL DEFAULT 'active',
@@ -61,6 +80,7 @@ CREATE TABLE IF NOT EXISTS `providers` (
   `status`    ENUM('active','inactive','error') NOT NULL DEFAULT 'active',
   `last_sync` TIMESTAMP     NULL DEFAULT NULL,
   `created_at` TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP    NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `idx_providers_status` (`status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -76,6 +96,7 @@ CREATE TABLE IF NOT EXISTS `services` (
   `name`                VARCHAR(500)    NOT NULL,
   `description`         TEXT            NULL,
   `rate`                DECIMAL(10,4)   NOT NULL COMMENT 'Precio por 1000 unidades en USD',
+  `provider_rate`       DECIMAL(10,4)   NOT NULL DEFAULT 0.0000 COMMENT 'Precio real del proveedor por 1000 unidades (costo)',
   `min_order`           INT UNSIGNED    NOT NULL DEFAULT 100,
   `max_order`           INT UNSIGNED    NOT NULL DEFAULT 1000000,
   `type`                VARCHAR(100)    NOT NULL DEFAULT 'Default',
@@ -150,30 +171,86 @@ CREATE TABLE IF NOT EXISTS `transactions` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ─────────────────────────────────────────────────────────────
+-- TABLA: wallets   ← NUEVA (requerida por walletModel.js)
+-- ─────────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS `wallets` (
+  `id`         INT UNSIGNED  NOT NULL AUTO_INCREMENT,
+  `user_id`    INT UNSIGNED  NOT NULL,
+  `balance`    DECIMAL(14,6) NOT NULL DEFAULT 0.000000,
+  `created_at` TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP     NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_wallets_user` (`user_id`),
+  CONSTRAINT `fk_wallets_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ─────────────────────────────────────────────────────────────
+-- TABLA: wallet_transactions   ← NUEVA
+-- ─────────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS `wallet_transactions` (
+  `id`            INT UNSIGNED  NOT NULL AUTO_INCREMENT,
+  `user_id`       INT UNSIGNED  NOT NULL,
+  `type`          ENUM('credit','debit') NOT NULL,
+  `amount`        DECIMAL(14,6) NOT NULL,
+  `balance_after` DECIMAL(14,6) NOT NULL,
+  `description`   VARCHAR(500)  NOT NULL,
+  `status`        ENUM('completed','pending','failed','refunded') NOT NULL DEFAULT 'completed',
+  `reference_id`  INT UNSIGNED  NULL COMMENT 'ID de orden o depósito relacionado',
+  `created_at`    TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_wt_user`    (`user_id`),
+  KEY `idx_wt_created` (`created_at`),
+  CONSTRAINT `fk_wt_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ─────────────────────────────────────────────────────────────
+-- TABLA: deposit_requests   ← NUEVA
+-- ─────────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS `deposit_requests` (
+  `id`           INT UNSIGNED  NOT NULL AUTO_INCREMENT,
+  `user_id`      INT UNSIGNED  NOT NULL,
+  `amount`       DECIMAL(14,2) NOT NULL,
+  `method`       ENUM('crypto','paypal','stripe','manual') NOT NULL DEFAULT 'manual',
+  `external_ref` VARCHAR(255)  NULL COMMENT 'ID de transacción del procesador de pago',
+  `status`       ENUM('pending','completed','rejected','expired') NOT NULL DEFAULT 'pending',
+  `notes`        TEXT          NULL,
+  `created_at`   TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`   TIMESTAMP     NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_dr_user`   (`user_id`),
+  KEY `idx_dr_status` (`status`),
+  CONSTRAINT `fk_dr_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ─────────────────────────────────────────────────────────────
 -- TABLA: tickets
+-- FIX: agregado order_id, 'urgent' en priority ENUM
 -- ─────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS `tickets` (
   `id`         INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `user_id`    INT UNSIGNED NOT NULL,
+  `order_id`   INT UNSIGNED NULL DEFAULT NULL COMMENT 'Orden relacionada, si aplica',
   `subject`    VARCHAR(500) NOT NULL,
   `status`     ENUM('open','pending','closed') NOT NULL DEFAULT 'open',
-  `priority`   ENUM('low','medium','high')     NOT NULL DEFAULT 'medium',
+  `priority`   ENUM('low','medium','high','urgent') NOT NULL DEFAULT 'medium',
   `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `idx_tickets_user`   (`user_id`),
   KEY `idx_tickets_status` (`status`),
-  CONSTRAINT `fk_tickets_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+  CONSTRAINT `fk_tickets_user`  FOREIGN KEY (`user_id`)  REFERENCES `users`  (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_tickets_order` FOREIGN KEY (`order_id`) REFERENCES `orders` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ─────────────────────────────────────────────────────────────
 -- TABLA: ticket_messages
+-- FIX CRÍTICO: from_admin → is_staff  (ticketModel.js usa is_staff)
 -- ─────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS `ticket_messages` (
   `id`         INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `ticket_id`  INT UNSIGNED NOT NULL,
   `user_id`    INT UNSIGNED NOT NULL,
-  `from_admin` TINYINT(1)   NOT NULL DEFAULT 0,
+  `is_staff`   TINYINT(1)   NOT NULL DEFAULT 0,
   `message`    TEXT         NOT NULL,
   `created_at` TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
@@ -202,7 +279,7 @@ CREATE TABLE IF NOT EXISTS `api_logs` (
 
 -- ─────────────────────────────────────────────────────────────
 -- TABLA: settings (key-value config del panel: mantenimiento,
--- métodos de pago, tasas de cambio, general)
+-- métodos de pago, tasas de cambio, datos generales del sitio)
 -- ─────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS `settings` (
   `key`        VARCHAR(100)   NOT NULL,
@@ -219,6 +296,9 @@ INSERT IGNORE INTO `settings` (`key`, `value`) VALUES
   ('general',           '{"site_name":"NexaPanel","site_url":"","support_email":"","currency":"USD","min_deposit":1,"max_deposit":10000}');
 
 SET foreign_key_checks = 1;
+
+
+
 
 
 
