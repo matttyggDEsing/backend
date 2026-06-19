@@ -185,9 +185,16 @@ const deleteProvider = async (req, res, next) => {
 };
 
 // Keywords para filtros de calidad y país
-const QUALITY_KEYWORDS = ['premium', 'hq', 'high quality', 'real', 'organic', 'genuine', 'natural', 'non drop', 'nondrop', 'lifetime'];
-const USA_KEYWORDS     = ['usa', 'us ', 'united states', 'american', 'america'];
 
+const QUALITY_KEYWORDS = ['premium', 'hq', 'high quality', 'real', 'organic', 'genuine', 'natural', 'non drop', 'nondrop', 'lifetime'];
+const USA_KEYWORDS     = ['usa', 'us', 'united states', 'american', 'america'];
+
+const SERVICE_TYPE_KEYWORDS = {
+  followers: ['follower', 'seguidores', 'subscribers', 'suscriptores', 'fans'],
+  likes:     ['like', 'likes', 'heart', 'reaction', 'me gusta'],
+  comments:  ['comment', 'comentario', 'review', 'reseña'],
+  reach:     ['reach', 'view', 'vista', 'impression', 'impresion', 'play', 'watch', 'stream', 'stories'],
+};
 function applyProviderFilters(services, filters = {}) {
   const { categories = [], qualityOnly = false, usaOnly = false } = filters;
   return services.filter(s => {
@@ -213,6 +220,57 @@ function applyProviderFilters(services, filters = {}) {
   });
 }
 
+
+function applyFilters(services, filters = {}) {
+  const { categories = [], serviceTypes = [], qualityOnly = false, usaOnly = false } = filters;
+  let filtered = 0;
+
+  const result = services.filter(s => {
+    const name = (s.name ?? '').toLowerCase();
+    const cat  = (s.category ?? '');
+
+    // Filtro de categorías del proveedor
+    if (categories.length > 0 && !categories.includes(cat)) {
+      filtered++;
+      return false;
+    }
+
+    // Filtro de tipo de servicio (likes, comments, followers, reach)
+    if (serviceTypes.length > 0) {
+      const matchesAnyType = serviceTypes.some(typeId => {
+        const keywords = SERVICE_TYPE_KEYWORDS[typeId] ?? [];
+        return keywords.some(k => name.includes(k));
+      });
+      if (!matchesAnyType) {
+        filtered++;
+        return false;
+      }
+    }
+
+    // Filtro de calidad
+    if (qualityOnly) {
+      const isQuality = QUALITY_KEYWORDS.some(k => name.includes(k));
+      if (!isQuality) {
+        filtered++;
+        return false;
+      }
+    }
+
+    // Filtro de país
+    if (usaOnly) {
+      const isUSA = USA_KEYWORDS.some(k => name.includes(k));
+      if (!isUSA) {
+        filtered++;
+        return false;
+      }
+    }
+
+    return true;
+  });
+
+  return { result, filtered };
+}
+
 const syncProvider = async (req, res, next) => {
   try {
     const id = parseInt(req.params.id);
@@ -226,26 +284,29 @@ const syncProvider = async (req, res, next) => {
       return errorResponse(res, 'El proveedor no devolvió servicios', 502);
     }
 
-    const totalRaw = rawServices.length;
-    const filtered = applyProviderFilters(rawServices, filters);
-    const filteredOut = totalRaw - filtered.length;
+    // Aplicar filtros antes de sincronizar
+    const { result: toSync, filtered } = applyFilters(rawServices, filters);
 
-    if (filtered.length === 0) {
-      return errorResponse(res, `Los filtros activos descartaron los ${totalRaw} servicios del proveedor. Ajustá los filtros e intentá de nuevo.`, 422);
+    if (toSync.length === 0) {
+      return successResponse(
+        res,
+        { synced: 0, filtered, total: rawServices.length },
+        `Ningún servicio pasó los filtros (${filtered} descartados de ${rawServices.length})`,
+      );
     }
 
-    const { synced } = await serviceModel.syncFromProvider(filtered, id);
+    const { synced } = await serviceModel.syncFromProvider(toSync, id);
 
     await pool.query(
       `UPDATE providers SET last_sync = NOW(), status = 'active' WHERE id = ?`,
       [id],
     );
 
-    logger.info(`Admin ${req.user.id} synced provider #${id}: ${synced} synced, ${filteredOut} filtered out`);
+    logger.info(`Admin ${req.user.id} synced provider #${id}: ${synced} synced, ${filtered} filtered out`);
     return successResponse(
       res,
-      { synced, filtered: filteredOut, total: totalRaw },
-      `${synced} servicios sincronizados${filteredOut > 0 ? ` (${filteredOut} descartados por filtros)` : ''}`,
+      { synced, filtered, total: rawServices.length },
+      `${synced} servicios sincronizados (${filtered} descartados por filtros)`,
     );
   } catch (err) {
     await pool.query(`UPDATE providers SET status = 'error' WHERE id = ?`, [parseInt(req.params.id)]).catch(() => {});

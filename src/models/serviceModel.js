@@ -3,25 +3,42 @@
 const { pool } = require('../config/db');
 
 /**
- * Retorna servicios activos (con join a categories).
+ * Retorna servicios activos con paginación.
+ * FIX: agregado LIMIT/OFFSET + COUNT para no traer toda la tabla de una.
  */
-const getActive = async ({ categoryId } = {}) => {
-  let sql = `
+const getActive = async ({ categoryId, limit = 50, offset = 0 } = {}) => {
+  const params = [];
+  let where = 'WHERE s.is_active = 1';
+
+  if (categoryId) {
+    where += ' AND s.category_id = ?';
+    params.push(categoryId);
+  }
+
+  const countSql = `
+    SELECT COUNT(*) AS total
+    FROM services s
+    JOIN categories c ON c.id = s.category_id
+    ${where}
+  `;
+
+  const dataSql = `
     SELECT s.id, s.provider_service_id, s.name, s.description,
            s.rate, s.min_order, s.max_order, s.type, s.refill, s.cancel,
            c.name AS category, c.slug AS category_slug, c.emoji AS category_emoji
     FROM services s
     JOIN categories c ON c.id = s.category_id
-    WHERE s.is_active = 1
+    ${where}
+    ORDER BY c.sort_order ASC, s.sort_order ASC, s.name ASC
+    LIMIT ? OFFSET ?
   `;
-  const params = [];
-  if (categoryId) {
-    sql += ' AND s.category_id = ?';
-    params.push(categoryId);
-  }
-  sql += ' ORDER BY c.sort_order ASC, s.sort_order ASC, s.name ASC';
-  const [rows] = await pool.query(sql, params);
-  return rows;
+
+  const [[{ total }], [rows]] = await Promise.all([
+    pool.query(countSql, params),
+    pool.query(dataSql, [...params, parseInt(limit), parseInt(offset)]),
+  ]);
+
+  return { rows, total };
 };
 
 const findAll = async ({ category } = {}) => {
@@ -153,12 +170,6 @@ const update = async (id, data) => {
 
 /**
  * Sincroniza servicios desde un proveedor SMM.
- * FIX: antes ignoraba de qué proveedor venían los servicios y siempre los
- * asociaba al primero de la tabla `providers` (ORDER BY id LIMIT 1). Con más
- * de un proveedor configurado, sincronizar el proveedor B terminaba guardando
- * sus servicios como si fueran del proveedor A.
- * FIX: el campo ID del proveedor puede venir como `service` (formato Peakerr)
- *      en vez de `provider_service_id`, y `category` puede venir como string.
  */
 const syncFromProvider = async (services, providerId) => {
   const conn = await pool.getConnection();
@@ -187,7 +198,6 @@ const syncFromProvider = async (services, providerId) => {
 
     let synced = 0;
     for (const s of services) {
-      // FIX: Peakerr usa `s.service` como ID, y puede venir `s.category` como string
       const providerServiceId = s.service ?? s.provider_service_id ?? 0;
       const categoryName = s.category ?? 'Sin categoría';
       const rate    = parseFloat(s.rate ?? 0);
@@ -224,21 +234,21 @@ const syncFromProvider = async (services, providerId) => {
       );
 
       if (existing.length > 0) {
-      await conn.query(
-  `UPDATE services SET
-     name = ?, description = ?, provider_rate = ?,
-     min_order = ?, max_order = ?, type = ?,
-     refill = ?, cancel = ?, category_id = ?, updated_at = NOW()
-   WHERE provider_service_id = ? AND provider_id = ?`,
-  [svcName, svcDesc, rate, minOrd, maxOrd, svcType, svcRefill, svcCancel,
-   categoryId, providerServiceId, providerId],
-	);
+        await conn.query(
+          `UPDATE services SET
+             name = ?, description = ?, provider_rate = ?,
+             min_order = ?, max_order = ?, type = ?,
+             refill = ?, cancel = ?, category_id = ?, updated_at = NOW()
+           WHERE provider_service_id = ? AND provider_id = ?`,
+          [svcName, svcDesc, rate, minOrd, maxOrd, svcType, svcRefill, svcCancel,
+           categoryId, providerServiceId, providerId],
+        );
       } else {
         await conn.query(
           `INSERT INTO services
              (provider_id, category_id, provider_service_id, name, description,
-	 rate, provider_rate, min_order, max_order, type, refill, cancel, is_active)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`,
+              rate, provider_rate, min_order, max_order, type, refill, cancel, is_active)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`,
           [providerId, categoryId, providerServiceId, svcName, svcDesc,
            rate, rate, minOrd, maxOrd, svcType, svcRefill, svcCancel],
         );
@@ -254,7 +264,8 @@ const syncFromProvider = async (services, providerId) => {
   } finally {
     conn.release();
   }
-}; 
+};
+
 const applyMarkup = async (markupPercent, providerId = null) => {
   const multiplier = 1 + (parseFloat(markupPercent) / 100);
   let where = 'WHERE provider_rate > 0';
@@ -266,6 +277,7 @@ const applyMarkup = async (markupPercent, providerId = null) => {
   );
   return { updated: result.affectedRows };
 };
+
 module.exports = {
   getActive,
   findAll,
@@ -277,7 +289,3 @@ module.exports = {
   syncFromProvider,
   applyMarkup,
 };
-
-
-
-
