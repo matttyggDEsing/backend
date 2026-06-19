@@ -5,6 +5,7 @@ const helmet  = require('helmet');
 const cors    = require('cors');
 const hpp     = require('hpp');
 const morgan  = require('morgan');
+const path    = require('path');
 
 const env            = require('./src/config/env');
 const { testConnection: testDB } = require('./src/config/db');
@@ -23,6 +24,7 @@ const ticketsRoutes   = require('./src/routes/tickets');
 const providersRoutes = require('./src/routes/providers');
 const adminRoutes     = require('./src/routes/admin');
 const publicApiRoutes = require('./src/routes/publicApi');
+const sellerRoutes    = require('./src/routes/seller');   // ← NUEVO
 
 const app = express();
 
@@ -40,6 +42,11 @@ app.use(general);
 // ── Parsing ────────────────────────────────────────────────────────────────
 app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
+
+// ── Archivos estáticos — comprobantes de vendedores ────────────────────────
+// Los archivos subidos por multer quedan en /uploads/vouchers/
+// y se sirven en /uploads/vouchers/<filename>
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // ── Logging HTTP ───────────────────────────────────────────────────────────
 app.use(morgan('combined', {
@@ -62,9 +69,10 @@ app.use('/api/tickets',   ticketsRoutes);
 app.use('/api/providers', providersRoutes);
 app.use('/api/admin',     adminRoutes);
 app.use('/api/v2',        publicApiRoutes);
-app.use('/api/settings', require('./src/routes/settings'));      // admin settings
-app.use('/api/admin/settings', require('./src/routes/settings')); // alias admin
-app.use('/api/api-key', require('./src/routes/apiKey'));          // api key usuario
+app.use('/api/settings',       require('./src/routes/settings'));
+app.use('/api/admin/settings', require('./src/routes/settings'));
+app.use('/api/api-key',        require('./src/routes/apiKey'));
+app.use('/api/seller',         sellerRoutes);   // ← NUEVO
 
 // ── 404 ────────────────────────────────────────────────────────────────────
 app.use((req, res) => {
@@ -92,9 +100,3 @@ start().catch((err) => {
 });
 
 module.exports = app;
-
-
-
-
-
-

@@ -1,5 +1,5 @@
-// src/controllers/authController.js — REEMPLAZO COMPLETO
-// FIX: agrega updateProfile y updatePassword
+// src/controllers/authController.js
+// Igual al original + campo `redirect` en el login según el rol del usuario.
 
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
@@ -11,6 +11,13 @@ const env = require('../config/env');
 
 const signToken = (id, role) =>
   jwt.sign({ id, role }, env.JWT_SECRET, { expiresIn: env.JWT_EXPIRES_IN });
+
+// Determina la ruta de redirección según el rol
+const redirectFor = (role) => {
+  if (role === 'admin')  return '/admin';
+  if (role === 'seller') return '/vendedor';
+  return '/dashboard';
+};
 
 const register = async (req, res, next) => {
   try {
@@ -33,6 +40,7 @@ const register = async (req, res, next) => {
       res,
       {
         token,
+        redirect: redirectFor('user'),
         user: {
           id: user.id,
           name: user.name,
@@ -69,6 +77,7 @@ const login = async (req, res, next) => {
 
     return successResponse(res, {
       token,
+      redirect: redirectFor(fullUser.role),
       user: {
         id: fullUser.id,
         name: fullUser.name,
@@ -103,7 +112,6 @@ const me = async (req, res, next) => {
   }
 };
 
-// ─── FIX: updateProfile ───────────────────────────────────────
 /**
  * PATCH /api/auth/profile
  * Actualiza nombre y email del usuario autenticado.
@@ -113,7 +121,6 @@ const updateProfile = async (req, res, next) => {
     const { name, email } = req.body;
     const userId = req.user.id;
 
-    // Si cambió el email, verificar que no esté tomado por otro usuario
     if (email !== req.user.email) {
       const existing = await userModel.findByEmail(email);
       if (existing && existing.id !== userId) {
@@ -139,7 +146,6 @@ const updateProfile = async (req, res, next) => {
   }
 };
 
-// ─── FIX: updatePassword ──────────────────────────────────────
 /**
  * PATCH /api/auth/password
  * Actualiza la contraseña verificando la contraseña actual.
@@ -149,7 +155,6 @@ const updatePassword = async (req, res, next) => {
     const { currentPassword, newPassword } = req.body;
     const userId = req.user.id;
 
-    // Necesitamos la contraseña hasheada → usar findByEmail con id
     const { pool } = require('../config/db');
     const [[userRow]] = await pool.query(
       'SELECT password FROM users WHERE id = ? LIMIT 1',
@@ -172,9 +177,3 @@ const updatePassword = async (req, res, next) => {
 };
 
 module.exports = { register, login, me, updateProfile, updatePassword };
-
-
-
-
-
-
