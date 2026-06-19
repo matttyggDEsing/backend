@@ -393,3 +393,9 @@
     at async syncProvider (C:\Users\Maty\Desktop\nexapanel\backend\src\controllers\adminController.js:227:25)
 2026-06-18 23:17:58 [ERROR] [SMM] Error tras 3 intentos (https://peakerr.com/api/v2): Proveedor SMM: Quantity less than minimal 10
 2026-06-18 23:17:58 [ERROR] Provider order failed for order #1: Proveedor SMM: Quantity less than minimal 10
+2026-06-18 23:23:01 [ERROR] [SMM] Error tras 1 intento(s) (https://peakerr.com/api/v2): Proveedor SMM: Quantity less than minimal 10
+2026-06-18 23:23:01 [ERROR] Provider order failed for order #2: Proveedor SMM: Quantity less than minimal 10
+2026-06-18 23:37:10 [ERROR] [SMM] Error tras 1 intento(s) (https://peakerr.com/api/v2): Proveedor SMM: Quantity less than minimal 5
+2026-06-18 23:37:10 [ERROR] Provider order failed for order #3: Proveedor SMM: Quantity less than minimal 5
+2026-06-18 23:39:10 [ERROR] [SMM] Error tras 1 intento(s) (https://peakerr.com/api/v2): Proveedor SMM: Quantity less than minimal 5
+2026-06-18 23:39:10 [ERROR] Provider order failed for order #4: Proveedor SMM: Quantity less than minimal 5

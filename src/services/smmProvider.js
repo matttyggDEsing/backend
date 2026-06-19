@@ -88,6 +88,21 @@ const getServices = async (apiUrl, apiKey) => {
 };
 
 /**
+ * Invalidar cache de servicios de un proveedor.
+ * Útil para forzar una re-lectura de límites actualizados.
+ */
+const invalidateServicesCache = async (apiUrl) => {
+  const { url } = resolveCreds(apiUrl);
+  const cacheKey = `smm:services:${url}`;
+  try {
+    await redis.del(cacheKey);
+    logger.info(`[SMM] Cache de servicios invalidada para ${url}`);
+  } catch (err) {
+    logger.warn(`[SMM] No se pudo invalidar cache de servicios: ${err.message}`);
+  }
+};
+
+/**
  * Crear una orden en el proveedor.
  */
 const addOrder = async ({ service, link, quantity, apiUrl, apiKey }) => {
@@ -122,7 +137,4 @@ const refillOrder = async (orderId, apiUrl, apiKey) => {
   return request({ action: 'refill', order: orderId }, { apiUrl, apiKey });
 };
 
-module.exports = { getServices, addOrder, getStatus, getMultipleStatus, getBalance, refillOrder };
-
-
-
+module.exports = { getServices, invalidateServicesCache, addOrder, getStatus, getMultipleStatus, getBalance, refillOrder };

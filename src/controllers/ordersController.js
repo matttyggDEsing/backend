@@ -34,10 +34,6 @@ const getOrderStats = async (req, res, next) => {
   }
 };
 
-/**
- * GET /api/orders/chart?range=7d|30d|90d
- * Devuelve órdenes agrupadas por día para el gráfico del dashboard.
- */
 const getOrderChart = async (req, res, next) => {
   try {
     const range = req.query.range || '7d';
@@ -56,7 +52,6 @@ const getOrderChart = async (req, res, next) => {
       [req.user.id, days]
     );
 
-    // Rellenar días sin órdenes con ceros para que el gráfico sea continuo
     const result = [];
     for (let i = days - 1; i >= 0; i--) {
       const d = new Date();
@@ -79,7 +74,7 @@ const getOrderChart = async (req, res, next) => {
 const createOrder = async (req, res, next) => {
   const conn = await pool.getConnection();
   try {
-    const { service_id, link, quantity } = req.body;
+    const { service_id, link, quantity, comments } = req.body;
     const userId = req.user.id;
 
     const service = await serviceModel.findById(service_id);
@@ -88,6 +83,57 @@ const createOrder = async (req, res, next) => {
       return errorResponse(res, 'Servicio no disponible', 404);
     }
 
+    // Para servicios de tipo Comments, comments es requerido
+    const isCommentService = /comment/i.test(service.type ?? '');
+    if (isCommentService && (!comments || !comments.toString().trim())) {
+      conn.release();
+      return errorResponse(res, 'Este servicio requiere que ingreses los comentarios', 400);
+    }
+
+    // FIX DEFINITIVO: actualizar min/max de la DB con los valores reales del proveedor
+    // ANTES de validar, para que siempre estén sincronizados.
+    // Se hace aquí una sola vez por orden, con timeout corto para no demorar si el proveedor tarda.
+    try {
+      const provider = await providerModel.findById(service.provider_id);
+      if (provider) {
+        await smm.invalidateServicesCache(provider.api_url);
+        const providerServices = await Promise.race([
+          smm.getServices(provider.api_url, provider.api_key),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 8000)),
+        ]);
+
+        if (Array.isArray(providerServices)) {
+          const ps = providerServices.find(
+            (s) => String(s.service) === String(service.provider_service_id),
+          );
+          if (ps) {
+            const provMin = parseInt(ps.min, 10);
+            const provMax = parseInt(ps.max, 10);
+            // Actualizar DB si hay diferencia
+            if (
+              (!isNaN(provMin) && provMin !== service.min_order) ||
+              (!isNaN(provMax) && provMax !== service.max_order)
+            ) {
+              await pool.query(
+                'UPDATE services SET min_order = ?, max_order = ?, updated_at = NOW() WHERE id = ?',
+                [isNaN(provMin) ? service.min_order : provMin,
+                 isNaN(provMax) ? service.max_order : provMax,
+                 service.id],
+              );
+              // Actualizar objeto en memoria para que la validación de abajo use los valores frescos
+              if (!isNaN(provMin)) service.min_order = provMin;
+              if (!isNaN(provMax)) service.max_order = provMax;
+              logger.info(`[Orders] Servicio #${service.id} actualizado: min=${service.min_order}, max=${service.max_order}`);
+            }
+          }
+        }
+      }
+    } catch (syncErr) {
+      // No bloquear la orden si el sync falla (timeout, red caída, etc.)
+      logger.warn(`[Orders] No se pudo sincronizar límites del servicio #${service.id}: ${syncErr.message}`);
+    }
+
+    // Validar cantidad contra los límites ya actualizados
     if (quantity < service.min_order || quantity > service.max_order) {
       conn.release();
       return errorResponse(
@@ -153,18 +199,19 @@ const createOrder = async (req, res, next) => {
 
     setImmediate(async () => {
       try {
-        // FIX: antes se llamaba a smm.addOrder sin pasar las credenciales del
-        // proveedor real del servicio (service.provider_id) — siempre pegaba
-        // contra el proveedor global de .env, sin importar a cuál proveedor
-        // pertenecía el servicio comprado.
         const provider = await providerModel.findById(service.provider_id);
-        const providerResponse = await smm.addOrder({
+        const orderParams = {
           service:  service.provider_service_id,
           link,
           quantity,
           apiUrl: provider?.api_url,
           apiKey: provider?.api_key,
-        });
+        };
+        // Pasar comentarios al proveedor si aplica
+        if (isCommentService && comments) {
+          orderParams.comments = comments.toString().trim();
+        }
+        const providerResponse = await smm.addOrder(orderParams);
         const providerOrderId = providerResponse?.order?.toString() ?? null;
         if (providerOrderId) {
           await pool.query(
@@ -175,8 +222,6 @@ const createOrder = async (req, res, next) => {
       } catch (provErr) {
         logger.error(`Provider order failed for order #${orderId}: ${provErr.message}`);
 
-        // Reembolsar al usuario — el proveedor rechazó la orden, el usuario
-        // no debe perder el saldo.
         try {
           await pool.query(
             `UPDATE users SET balance = balance + ? WHERE id = ?`,
@@ -188,8 +233,8 @@ const createOrder = async (req, res, next) => {
              VALUES (?, ?, 'credit', ?, ?, ?, ?, 'completed')`,
             [
               userId, orderId, charge,
-              balanceBefore - charge,   // balance después del débito original
-              balanceBefore,            // queda igual que antes de la orden
+              balanceBefore - charge,
+              balanceBefore,
               `Reembolso automático — Orden #${orderId} rechazada por el proveedor`,
             ],
           );
@@ -230,8 +275,3 @@ const getOrder = async (req, res, next) => {
 };
 
 module.exports = { getOrders, getOrderStats, getOrderChart, createOrder, getOrder };
-
-
-
-
-
