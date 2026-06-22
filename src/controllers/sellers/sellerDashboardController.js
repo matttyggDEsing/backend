@@ -1,9 +1,11 @@
 'use strict';
 
+// src/controllers/sellers/sellerDashboardController.js
+
 const { pool } = require('../../config/db');
 const { successResponse } = require('../../utils/response');
 
-// ── Stats principales ──────────────────────────────────────────────────────
+// ── Stats principales del dashboard ───────────────────────────────────────────
 const getDashboard = async (req, res, next) => {
   try {
     const sellerId = req.user.id;
@@ -89,7 +91,7 @@ const getDashboard = async (req, res, next) => {
       [sellerId]
     );
 
-    // Ranking semanal (posición del vendedor entre todos los vendedores)
+    // Ranking semanal
     const [rankingWeek] = await pool.query(
       `SELECT seller_id, COALESCE(SUM(total), 0) AS total_revenue,
               RANK() OVER (ORDER BY COALESCE(SUM(total), 0) DESC) AS rank_pos
@@ -110,11 +112,11 @@ const getDashboard = async (req, res, next) => {
     const rankingMonthMe = rankingMonth.find(r => r.seller_id === sellerId);
 
     return successResponse(res, {
-      today:       { count: Number(today.count),     revenue: Number(today.revenue) },
-      week:        { count: Number(week.count),      revenue: Number(week.revenue) },
-      customers:   Number(customers.total),
+      today:        { count: Number(today.count),    revenue: Number(today.revenue) },
+      week:         { count: Number(week.count),     revenue: Number(week.revenue) },
+      customers:    Number(customers.total),
       services_sold: Number(services.total_quantity),
-      chart:       chartFilled,
+      chart:        chartFilled,
       top_services: topServices,
       recent_sales: recentSales,
       ranking: {
@@ -125,4 +127,47 @@ const getDashboard = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-module.exports = { getDashboard };
+// ── Ranking independiente (top vendedores) ────────────────────────────────────
+// GET /api/seller/ranking
+const getRanking = async (req, res, next) => {
+  try {
+    // Top 10 vendedores semana
+    const [week] = await pool.query(
+      `SELECT u.id, u.name,
+              COALESCE(SUM(ss.total), 0) AS revenue,
+              COUNT(ss.id) AS sales_count,
+              RANK() OVER (ORDER BY COALESCE(SUM(ss.total), 0) DESC) AS rank_pos
+       FROM users u
+       LEFT JOIN seller_sales ss
+         ON ss.seller_id = u.id
+         AND ss.created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+       WHERE u.role = 'seller'
+       GROUP BY u.id, u.name
+       ORDER BY revenue DESC
+       LIMIT 10`
+    );
+
+    // Top 10 vendedores mes
+    const [month] = await pool.query(
+      `SELECT u.id, u.name,
+              COALESCE(SUM(ss.total), 0) AS revenue,
+              COUNT(ss.id) AS sales_count,
+              RANK() OVER (ORDER BY COALESCE(SUM(ss.total), 0) DESC) AS rank_pos
+       FROM users u
+       LEFT JOIN seller_sales ss
+         ON ss.seller_id = u.id
+         AND ss.created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+       WHERE u.role = 'seller'
+       GROUP BY u.id, u.name
+       ORDER BY revenue DESC
+       LIMIT 10`
+    );
+
+    return successResponse(res, {
+      week:  week.map(r => ({ ...r, revenue: Number(r.revenue), rank_pos: Number(r.rank_pos) })),
+      month: month.map(r => ({ ...r, revenue: Number(r.revenue), rank_pos: Number(r.rank_pos) })),
+    });
+  } catch (err) { next(err); }
+};
+
+module.exports = { getDashboard, getRanking };
